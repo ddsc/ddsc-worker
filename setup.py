@@ -10,7 +10,10 @@ long_description = '\n\n'.join([
 
 install_requires = [
     'setuptools',
-    'celery',
+    'celery >= 3.0.12',
+#   'ddsc-core',
+#   'librabbitmq',  # For better performance, but fails installing
+    'tslib',
     ],
 
 tests_require = [
