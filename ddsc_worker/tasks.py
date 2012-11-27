@@ -1,24 +1,39 @@
 #from ddsc_core.models import DataStore
 from __future__ import absolute_import
+from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 from ddsc_worker.celery import celery
+from ddsc_worker.logging.handlers import DDSCHandler
 from tslib.readers import PiXmlReader
 import gzip
+import logging
 import os
 import shutil
 import time
+
+
+@after_setup_task_logger.connect
+def setup_ddsc_task_logger(**kwargs):
+    handler = DDSCHandler()
+    handler.setFormatter(logging.Formatter(
+        "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"
+    ))
+    logger.addHandler(handler)
+
 
 logger = get_task_logger(__name__)
 
 
 @celery.task
 def add(x, y):
+    logger.info("Adding %r + %r" % (x, y))
     time.sleep(9)
     return x + y
 
 
 @celery.task
 def mul(x, y):
+    logger.info("Multiplying %r * %r" % (x, y))
     time.sleep(3)
     return x * y
 

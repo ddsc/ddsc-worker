@@ -13,6 +13,7 @@ install_requires = [
     'celery >= 3.0.12',
 #   'ddsc-core',
 #   'librabbitmq',  # For better performance, but fails installing
+    'pika >= 0.9.8',  # Temporary queue creation blocks in 0.9.7 (issue 218)
     'tslib',
     ],
 
