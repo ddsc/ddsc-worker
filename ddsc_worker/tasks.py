@@ -1,7 +1,7 @@
-#from ddsc_core.models import DataStore
 from __future__ import absolute_import
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
+from ddsc_core.models import Timeseries
 from ddsc_worker.celery import celery
 from ddsc_worker.logging.handlers import DDSCHandler
 from tslib.readers import PiXmlReader
@@ -43,9 +43,10 @@ def import_pi_xml(src):
     logger.info("Importing %r" % src)
     reader = PiXmlReader(src)
     for md, df in reader.get_series():
-        # TODO: store metadata in postgress
-        # TODO: store dataframe in cassandra
-        pass
+        code = md['header']['parameterId']
+        ts, _ = Timeseries.objects.get_or_create(code=code)
+        ts.set_events(df)
+        ts.save()
     return src
 
 

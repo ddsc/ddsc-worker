@@ -21,15 +21,12 @@ DATABASES = {
     # the specified database exists. When the tests cannot run, Jenkins sees
     # that as an error.
     'default': {
-        'NAME': os.path.join(BUILDOUT_DIR, 'var', 'sqlite', 'test.db'),
-        'ENGINE': 'django.contrib.gis.db.backends.spatialite',
-        # If you want to use postgres, use the two lines below.
-        # 'NAME': 'ddsc_worker',
-        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'USER': 'buildout',
-        'PASSWORD': 'buildout',
-        'HOST': '',  # empty string for localhost.
-        'PORT': '',  # empty string for default.
+        'NAME': '',      # via localsettings!
+        'ENGINE': '',    # via localsettings!
+        'USER': '',      # via localsettings!
+        'PASSWORD': '',  # via localsettings!
+        'HOST': '',      # via localsettings!
+        'PORT': '',      # via localsettings!
         }
     }
 

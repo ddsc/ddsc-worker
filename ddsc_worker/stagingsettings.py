@@ -3,14 +3,20 @@ from ddsc_worker.settings import *
 DATABASES = {
     # Changed server from production to staging
     'default': {
-        'NAME': 'ddsc_worker',
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'USER': 'ddsc_worker',
-        'PASSWORD': '3sqsk3+!z0',
-        'HOST': 's-web-db-00-d03.external-nens.local',
-        'PORT': '5432',
+        'NAME': '',      # via localstagingsettings!
+        'ENGINE': '',    # via localstagingsettings!
+        'USER': '',      # via localstagingsettings!
+        'PASSWORD': '',  # via localstagingsettings!
+        'HOST': '',      # via localstagingsettings!
+        'PORT': '',      # via localstagingsettings!
         },
     }
 
 # TODO: add staging gauges ID here.
 UI_GAUGES_SITE_ID = ''  # Staging has a separate one.
+
+try:
+    from ddsc_worker.localstagingsettings import *
+    # For local staging overrides (DB passwords, for instance)
+except ImportError:
+    pass

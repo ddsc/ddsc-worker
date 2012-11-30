@@ -56,12 +56,12 @@ MANAGERS = ADMINS
 # In case of geodatabase, prepend with: django.contrib.gis.db.backends.(postgis)
 DATABASES = {
     'default': {
-        'NAME': 'ddsc_worker',
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'USER': 'ddsc_worker',
-        'PASSWORD': '&^!9hjwnk6',
-        'HOST': 'p-web-db-00-d03.external-nens.local',
-        'PORT': '5432',
+        'NAME': '',      # via localproductionsettings!
+        'ENGINE': '',    # via localproductionsettings!
+        'USER': '',      # via localproductionsettings!
+        'PASSWORD': '',  # via localproductionsettings!
+        'HOST': '',      # via localproductionsettings!
+        'PORT': '',      # via localproductionsettings!
         }
     }
 
@@ -72,7 +72,8 @@ SITE_ID = 1
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name although not all
 # choices may be available on all operating systems.  If running in a Windows
 # environment this must be set to the same as your system time zone.
-TIME_ZONE = 'Europe/Amsterdam'
+TIME_ZONE = 'UTC'
+USE_TZ = True
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -103,7 +104,7 @@ MEDIA_URL = '/media/'
 STATIC_URL = '/static_media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'roi*9+$o+wo7)km%sh_*2qyr0+7s726gbnl-1e&-6c(n-%1zd3'
+SECRET_KEY = ''  # via localproductionsettings!
 
 ROOT_URLCONF = 'ddsc_worker.urls'
 
@@ -133,11 +134,7 @@ MIDDLEWARE_CLASSES = (
 
 INSTALLED_APPS = (
     'ddsc_worker',
-    # lizard_maptree and lizard_wms are included for demo purposes. Almost
-    # every site needs them, but you're free to remove them if unneeded.
-    'lizard_maptree',
-    'lizard_wms',
-    'lizard_map',
+    'ddsc_core',
     'lizard_ui',
     'lizard_security',
     'south',

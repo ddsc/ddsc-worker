@@ -10,19 +10,17 @@ long_description = '\n\n'.join([
 
 install_requires = [
     'Django',
+    'celery >= 3.0.12',
+    'ddsc-core',
     'django-celery',
     'django-extensions',
     'django-nose',
     'gunicorn',
-    'lizard-map',
     'lizard-ui',
     'python-memcached',
     'raven',
+    'tslib',
     'werkzeug',
-    # Maptree and wms are included for demo purposes; almost every site needs
-    # them anyway.
-    'lizard-maptree',
-    'lizard-wms',
     ],
 
 setup(name='ddsc-worker',
