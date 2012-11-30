@@ -18,13 +18,13 @@ logger = get_task_logger(__name__)
 def data_convert(src):
 #    pydevd.settrace()
     try:
-        tsOBJ=read_csv(fileDirName, index_col=0, parse_dates = True, names=['Temperature','SensorID'])
+        tsOBJ=read_csv(src, index_col=0, parse_dates = True, names=['Temperature','SensorID'])
         status = 1
     except:
-        print 'CSV file: ' + fileDirName + 'ERROR to convert!'
+        print 'CSV file: ' + src + 'ERROR to convert!'
         status = 0
     if status==0:
-        msg = fileDirName + "_convert"    # massage contains file name and failure typ
+        msg = src + "_convert"    # massage contains file name and failure typ
     else: 
         tsOBJ['Flag'] = 'None'
         msg = "yes"
