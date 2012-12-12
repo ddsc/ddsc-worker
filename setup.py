@@ -42,5 +42,6 @@ setup(name='ddsc-worker',
       install_requires=install_requires,
       entry_points={
           'console_scripts': [
+          'call_by_incron = ddsc_worker.call_by_incron:main',
           ]},
       )
