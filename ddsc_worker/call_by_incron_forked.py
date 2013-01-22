@@ -37,7 +37,7 @@ logger = get_task_logger(__name__)
 @celery.task
 def main():
     ## dummy HDFS folder
-    dstPathDir = "/home/spd/dst"
+    dstPathDir = "/home/shaoqing/dst"
     pathDir = sys.argv[1] + "/"
     fileName = sys.argv[2]
     src = pathDir + fileName

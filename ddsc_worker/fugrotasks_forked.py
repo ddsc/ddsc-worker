@@ -28,13 +28,13 @@ def setup_ddsc_task_logger(**kwargs):
 
 logger = logging.getLogger(__name__)
 
-hdlr = logging.FileHandler('/home/spd/ddsc.log')
+hdlr = logging.FileHandler('/home/shaoqing/ddsc.log')
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
-ERROR_CSV = "/home/spd/rejected_csv"
+ERROR_CSV = "/home/shaoqing/rejected_csv"
 
 # @celery.task
 def data_convert(src):
