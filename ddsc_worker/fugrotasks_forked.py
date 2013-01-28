@@ -17,6 +17,11 @@ import os
 import shutil
 from subprocess import call
 
+from ddsc_worker.import_auth import get_usr_by_folder
+from ddsc_worker.import_auth import get_auth
+#from ddsc_worker.import_auth import get_usr_by_folder
+#from ddsc_worker.import_auth import get_usr_by_folder
+
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
@@ -36,14 +41,14 @@ logger.setLevel(logging.INFO)
 
 ERROR_CSV = "/home/shaoqing/rejected_csv"
 
-# @celery.task
+
 def data_convert(src):
 #    pydevd.settrace()
     try:
         logger.info("[x] converting %r to pandas object" % (src))
         tsOBJ = read_csv(src, index_col=0,
         parse_dates=True,
-        names=['SensorID', 'Temperature'])
+        names=['SensorID', 'value'])
         status = 1
     except:
         print 'CSV file: ' + src + 'ERROR to convert!'
@@ -54,52 +59,56 @@ def data_convert(src):
         logger.info("[x] %r _MOVED to  %r" % (src, ERROR_CSV))
         exit()
     else:
-        tsOBJ['Flag'] = 'None'
+        tsOBJ['flag'] = 'None'
+        tsOBJ = tsOBJ.sort()
         # self.data_validate(tsOBJ)
-        print "[x]  %r _converted" % (src)
-        logger.info("[x] %r _converted" % (src))
+        print "[x]  %r _converted & sorted" % (src)
+        logger.info("[x] %r _converted & sorted" % (src))
         return tsOBJ
+    
+
+def data_validate(tsOBJ, ts, src=None):
+    
+    # getting validation thresholds
+    # did not handle the situation where the threshold could be "None"
+    max_hard = ts.validate_max_hard
+    min_hard = ts.validate_min_hard
+    max_soft = ts.validate_max_soft
+    min_soft = ts.validate_min_soft
+    diff_hard = ts.validate_diff_hard
+    diff_soft = ts.validate_diff_soft
+    
+###    if max_hard == None or :
+#        pass
+#    else:
+    logger.info("[x] validating %r" % (src))
+    i = 0
+    for row in tsOBJ.iterrows():
+        if ((diff_hard < abs(tsOBJ.value[i - 1] - tsOBJ.value[i]))
+        or (tsOBJ.value[i] > max_hard)
+        or (tsOBJ.value[i] < min_hard)) :
+            tsOBJ['flag'][i] = '6'
+            i += 1
+        elif (diff_soft < abs(tsOBJ.value[i - 1] -
+        tsOBJ.value[i]) or (tsOBJ.value[i] > max_soft)
+         or (tsOBJ.value[i] < min_soft)):
+            tsOBJ['flag'][i] = '3'
+            i += 1
+        else:
+            tsOBJ['flag'][i] = '0'
+            i += 1
+    print "[x] %r  _validated" % (src)
+    logger.info("[x] %r _validated" % (src))
+    return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
 
 
-# @celery.task
-def data_validate(tsOBJ, min_t=4, max_t=9, src=None):
-    if 1 == 2:
-        pass
-    else:
-        logger.info("[x] validating %r" % (src))
-        i = 0
-        for row in tsOBJ.iterrows():
-            if max_t < abs((tsOBJ.Temperature[i - 1]) -
-            (tsOBJ.Temperature[i])):
-                tsOBJ['Flag'][i] = '6'
-                i += 1
-            elif min_t < abs((tsOBJ.Temperature[i - 1]) -
-            (tsOBJ.Temperature[i])):
-                tsOBJ['Flag'][i] = '3'
-                i += 1
-            else:
-                tsOBJ['Flag'][i] = '0'
-                i += 1
-        print "[x] %r  _validated" % (src)
-        logger.info("[x] %r _validated" % (src))
-
-        print tsOBJ
-        return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
-
-
-# @celery.task
-def write2_cassandra(tsOBJ_yes, src):
+def write2_cassandra(tsOBJ_yes, ts,src):
     # DONE: write to Cassandra and Postgres
     # DONE: follow Carsten's coming code
-    logger.info("[x] writing %r to Cassandra" % (src))
-    series_id = '3201.WATHTE.onder.instantaneous'
-
-    ts, _ = Timeseries.objects.get_or_create(code = series_id)
-    # (ts, status) = result
     try :
         for timestamp, row  in tsOBJ_yes.iterrows():
             ts.set_event(timestamp, row)
-        ts.save()
+            ts.save()
         wStatus = 1
         print ("[x] %r _written" % (src))
         logger.info("[x] %r _written" % (src))
@@ -111,7 +120,6 @@ def write2_cassandra(tsOBJ_yes, src):
     return wStatus
 
 
-# @celery.task
 def data_delete(wStatus, src):
     if wStatus == 1:
         remove(src)
@@ -127,10 +135,23 @@ def data_delete(wStatus, src):
 
 
 @celery.task
-def import_csv(src, min_v, max_v):
+def import_csv(src, usr):
     tsobj = data_convert(src)
-    tsobjYes = data_validate(tsobj, min_v, max_v, src)
-    st =  write2_cassandra(tsobjYes, src)    
+#    usr = get_usr_by_folder(pathDir)
+    tsgrouped = tsobj.groupby('SensorID')
+    nr = len(tsgrouped)
+    nr = str(nr)
+    logger.info('There are %r timeseries in file : %r' % (nr, src))
+    for tsobj_grouped in tsgrouped :
+        remoteid = tsobj_grouped[0][:]   # indices doesnt make sense to me but just works
+        ts = get_auth(usr, remoteid)  # user object and remote id
+        if ts == False:
+            logger.error('User: %r has no permission change timeseries: %r' % (usr.username, remoteid))
+            exit()
+        else:        
+            tsobjYes = data_validate(tsobj_grouped, ts, src)
+            st =  write2_cassandra(tsobjYes, ts, src)
+                
     data_delete(st, src)
 
 
@@ -154,7 +175,7 @@ def imagename_write_DB(src, dst):
     ## MAKE A DUMMY TIMESTAMP FOR PIC
     ## TODO: RETRIEVING FROM EXIF HEADER
     indx = pandas.date_range('2000-12-23T12:20:23Z', periods=1)
-    df = DataFrame([dst], index=indx, columns=['Ref'])
+    df = DataFrame([dst], index=indx, columns=['value'])
     print ("[x] Writing %r to DB" % src)
     logger.info("[x] Writing %r to DB" % src)
     ts, _ = Timeseries.objects.get_or_create(code="dummyImageSeriesID")
@@ -217,16 +238,16 @@ def import_lmw(src, fileName):
     y_cord = strlist[1].replace("\r\n",'')    
 
     i = 0
-    tsOBJ['Flag'] = 'None'
+    tsOBJ['flag'] = 'None'
     for row in tsOBJ.iterrows():
             if tsOBJ.q_flag[i] in [10, 30, 50, 70] :
-                tsOBJ['Flag'][i] = '0'
+                tsOBJ['flag'][i] = '0'
                 i += 1
             elif tsOBJ.q_flag[i] in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
-                tsOBJ['Flag'][i] = '3'
+                tsOBJ['flag'][i] = '3'
                 i += 1
             else:
-                tsOBJ['Flag'][i] = '6'
+                tsOBJ['flag'][i] = '6'
                 i += 1
     print "[x] %r  _validated" % (src)
     logger.info("[x] %r _validated" % (src))
