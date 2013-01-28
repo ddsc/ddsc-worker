@@ -21,6 +21,7 @@ install_requires = [
     'raven',
     'tslib',
     'werkzeug',
+    'python-daemon',
     ],
 
 setup(name='ddsc-worker',
