@@ -10,6 +10,8 @@ from ddsc_core.models.system import IPAddress, Folder
 from ddsc_core.auth import PERMISSION_CHANGE
 from django.contrib.auth.models import User
 
+import pandas as pd
+
 logger = logging.getLogger(__name__)
 hdlr = logging.FileHandler('/home/shaoqing/ddsc.log')
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
@@ -74,3 +76,15 @@ def get_timeseries_by_remoteid(remoteid, usr):
         except Timeseries.DoesNotExist :
             logger.error("No permission to write timeseries with remoteID: %r by: %r" %(remoteid, usr))
             return 0
+        
+def get_remoteid_by_filename(filename): # file name should be: <timeseries_id>_<datetime>.*
+    f = filename.find("_")
+    remoteid = filename[0:f]
+    return remoteid
+
+def get_timestamp_by_filename(filename): # file name should be: <timeseries_id>_<datetime>.*
+    f1 = filename.find("_")
+    f2 = filename.find(".")
+    tmstmp = filename[f1+1:f2]
+    timestamp = pd.date_range(tmstmp, periods=1)
+    return timestamp

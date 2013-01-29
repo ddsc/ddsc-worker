@@ -7,9 +7,8 @@ import logging
 from ddsc_worker.celery import celery
 
 from pandas.io.parsers import read_csv
-from pandas import DataFrame
-import pandas
-# import pydevd # for remote debugging propose
+import pandas as pd
+
 from ddsc_core.models import Timeseries
 
 from os import remove
@@ -17,7 +16,9 @@ import os
 import shutil
 from subprocess import call
 
-from ddsc_worker.import_auth import get_usr_by_folder
+from ddsc_worker.import_auth import get_timestamp_by_filename
+from ddsc_worker.import_auth import get_remoteid_by_filename
+from ddsc_worker.import_auth import get_timeseries_by_remoteid
 from ddsc_worker.import_auth import get_auth
 #from ddsc_worker.import_auth import get_usr_by_folder
 #from ddsc_worker.import_auth import get_usr_by_folder
@@ -102,7 +103,7 @@ def data_validate(tsOBJ, ts, src=None):
     return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
 
 
-def write2_cassandra(tsOBJ_yes, ts,src):
+def write2_cassandra(tsOBJ_yes, ts, src):
     # DONE: write to Cassandra and Postgres
     # DONE: follow Carsten's coming code
     try :
@@ -155,55 +156,88 @@ def import_csv(src, usr):
     data_delete(st, src)
 
 
-@celery.task(ignore_result=True)
 def data_move(src, dst):
-    print ("[x] Moving %r to %r" % (src, dst))
-    logger.info("[x] Moving %r to %r" % (src, dst))
+    if not os.path.exists(dst):
+        os.makedirs(dst)
     try:
         shutil.move(src, dst)
         if os.path.isdir(dst):
+            print ("[x] Moved %r to %r" % (src, dst))
+            logger.info("[x] Moved %r to %r" % (src, dst))
             return os.path.join(dst, os.path.split(src)[1])
         else:
+            print ("[x] Moved %r to %r" % (src, dst))
+            logger.info("[x] Moved %r to %r" % (src, dst))
             return dst
     except EnvironmentError as e:
         logger.error(e)
         exit()
-
-
-@celery.task(ignore_result=True)
-def imagename_write_DB(src, dst):
-    ## MAKE A DUMMY TIMESTAMP FOR PIC
-    ## TODO: RETRIEVING FROM EXIF HEADER
-    indx = pandas.date_range('2000-12-23T12:20:23Z', periods=1)
-    df = DataFrame([dst], index=indx, columns=['value'])
-    print ("[x] Writing %r to DB" % src)
-    logger.info("[x] Writing %r to DB" % src)
-    ts, _ = Timeseries.objects.get_or_create(code="dummyImageSeriesID")
-    for timestamp, row in df.iterrows():
-        ts.set_event(timestamp, row)
+    
+    
+@celery.task
+def import_file(src, filename, dst, usr):
+    logger.info("[x] Importing %r to DB" % filename)
+    timestamp = get_timestamp_by_filename(filename)
+    
+    remoteid = get_remoteid_by_filename(filename)
+    ts = get_timeseries_by_remoteid(remoteid, usr)
+    
+    str_year = str(timestamp.year[0])
+    str_month = str(timestamp.month[0])
+    str_day = str(timestamp.day[0])
+    store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
+    store_dstf = store_dst + filename
+    
+    values = {"value": store_dstf}
+    if usr.has_perm('change', ts) :
+        ts.set_event(timestamp[0], values)
         ts.save()
+        data_move(src, store_dst)
+        logger.info("[x] %r has been written and moved to %r" % (filename, store_dst))
+    else:
+        logger.error("[x] unauthorized user to this timeseries")
+        data_delete(1, src)
 
 
 @celery.task(ignore_result=True)
-def publish_gserver(src, fileName):
-    #  call java .jar
-    #  we still dont have the control of specify the
-    #  workspace, storage, or layer name... TOBE added
-    #  create Geoserver data storage name according to fileName
+def import_geotiff(src, filename, dst, usr):
+    logger.info("[x] Importing %r to DB" % filename)
+    timestamp = get_timestamp_by_filename(filename)
+    
+    remoteid = get_remoteid_by_filename(filename)
+    ts = get_timeseries_by_remoteid(remoteid, usr)
+    
+    str_year = str(timestamp.year[0])
+    str_month = str(timestamp.month[0])
+    str_day = str(timestamp.day[0])
+    store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
+    store_dstf = store_dst + filename
+    
     logger.info("[x] publishing %r into GeoServer..." % (src))
-    hao = call(['java', '-jar',
-        '/home/spd/localrepo/ddsc-worker/ddsc_worker/gs_push.jar',
-        src, fileName])
-    if hao == 0:
-        print "[x] _published %r to GeoServer" % src
-        logger.info("[x] Published %r to GeoServer " % src)
-    else :
-        print "[x] Publishing error"
-        logger.error("[x] Publishing error")
+
     #  since it is a subprocess, we are not sure if it has been
     #  executed properly or not... Further check need to be done
     #  before proceed to the next stage
-
+    values = {"value": store_dstf}
+    
+    if usr.has_perm('change', ts) :
+        hao = call(['java', '-jar',
+        '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/gs_push.jar',
+        src, ts.code, str_day + str_month + str_year])
+        if hao == 0:
+            print "[x] _published %r to GeoServer" % src
+            logger.info("[x] Published %r to GeoServer " % src)
+            ts.set_event(timestamp[0], values)
+            ts.save()
+            data_move(src, store_dst)
+            logger.info("[x] %r has been written and moved to %r" % (filename, store_dst))
+        else :
+            print "[x] Publishing error"
+            logger.error("[x] Publishing error")
+    else:
+        logger.error("[x] unauthorized user to this timeseries")
+        data_delete(1, src)
+    
 
 @celery.task
 def import_lmw(src, fileName):
