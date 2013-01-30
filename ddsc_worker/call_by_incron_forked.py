@@ -5,7 +5,10 @@ from celery.utils.log import get_task_logger
 from ddsc_worker.fugrotasks_forked import import_csv
 from ddsc_worker.fugrotasks_forked import import_file
 from ddsc_worker.fugrotasks_forked import import_geotiff
+from ddsc_worker.fugrotasks_forked import data_move
 from ddsc_worker.import_auth import get_usr_by_folder
+
+from django.conf import settings
 
 import sys
 import os
@@ -15,6 +18,7 @@ from ddsc_worker.logging.handlers import DDSCHandler
 from ddsc_worker.celery import celery
 import logging
 
+DST_PATHS = getattr(settings, 'PATH_DST')
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
@@ -26,18 +30,18 @@ def setup_ddsc_task_logger(**kwargs):
 
 logger = get_task_logger(__name__)
 
-
 def main():
     ## dummy HDFS folder
     dstPathDir = "/home/shaoqing/dst"  # TO BE put in django settings
     pathDir = sys.argv[1] + "/"
     fileName = sys.argv[2]
     src = pathDir + fileName
-    dst = dstPathDir + '/' + fileName
+    # dst = dstPathDir + '/' + fileName
     fileDirName, fileExtension = os.path.splitext(src)
     fileExtension = string.lower(fileExtension)
     
     usr = get_usr_by_folder(pathDir)
+
 
     if fileExtension == ".filepart":
         fileName = fileName.replace(".filepart","")
@@ -47,20 +51,23 @@ def main():
     if fileExtension == ".csv":
             # csv_detected.delay(src)
         import_csv.delay(src, usr)
-    elif (fileExtension == ".png"
-    or fileExtension == ".jpg"
-    or fileExtension == ".jpeg"
-    or fileExtension == ".avi"
-    or fileExtension == ".wmv"
-    or fileExtension == ".pdf"):
-        import_file.delay(pathDir, fileName, usr)
-    elif (fileExtension == ".tif"
-    or fileExtension == ".tiff"):
+    elif (fileExtension == ".png") or \
+    (fileExtension == ".jpg") or \
+    fileExtension == ".jpeg" :
+        dst = DST_PATHS['image']
+        import_file(pathDir, fileName, dst, usr)
+    elif fileExtension == ".avi" or \
+    fileExtension == ".wmv":
+        dst = DST_PATHS['video']
+        import_file(pathDir, fileName, dst, usr)
+    elif fileExtension == ".pdf" :
+        dst = DST_PATHS['pdf']
+        import_file(pathDir, fileName, dst, usr)
+    elif (fileExtension == ".tif" or \
+    fileExtension == ".tiff") :
         import_geotiff.delay(src, usr)
     else:
         file_ignored.delay(src, fileExtension)
- #   else:
- #       auth_failed(usr, fileName)
 
 
 @celery.task
@@ -88,4 +95,6 @@ def file_ignored(src, fileExtension):
     logger.info('''[x]--Warning-- * %r
     FILE: %r is not acceptable'''
     % (fileExtension, src))
+    dst = DST_PATHS['unrecognized']
+    data_move(src, dst)
 
