@@ -32,7 +32,6 @@ logger = get_task_logger(__name__)
 
 def main():
     ## dummy HDFS folder
-    dstPathDir = "/home/shaoqing/dst"  # TO BE put in django settings
     pathDir = sys.argv[1] + "/"
     fileName = sys.argv[2]
     src = pathDir + fileName

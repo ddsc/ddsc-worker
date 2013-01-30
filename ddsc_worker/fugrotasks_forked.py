@@ -107,10 +107,11 @@ def data_validate(tsOBJ, ts, src=None):
 def write2_cassandra(tsOBJ_yes, ts, src):
     # DONE: write to Cassandra and Postgres
     # DONE: follow Carsten's coming code
+    print 'are we here'  ## debug purpose
     try :
-        for timestamp, row  in tsOBJ_yes.iterrows():
-            ts.set_event(timestamp, row)
-            ts.save()
+        tsOBJ_yes = tsOBJ_yes.tz_localize('UTC')
+        ts.set_events(tsOBJ_yes)
+        ts.save()
         wStatus = 1
         print ("[x] %r _written" % (src))
         logger.info("[x] %r _written" % (src))
@@ -144,17 +145,21 @@ def import_csv(src, usr):
     nr = len(tsgrouped)
     nr = str(nr)
     logger.info('There are %r timeseries in file : %r' % (nr, src))
-    for tsobj_grouped in tsgrouped :
-        remoteid = tsobj_grouped[0][:]   # indices doesnt make sense to me but just works
+    success = True
+    for name, tsobj_grouped in tsgrouped :
+        remoteid = tsobj_grouped['SensorID'][0]   # indices doesnt make sense to me but just works
         ts = get_auth(usr, remoteid)  # user object and remote id
         if ts == False:
-            logger.error('User: %r has no permission change timeseries: %r' % (usr.username, remoteid))
-            exit()
-        else:        
+            success = False
+        else:
+            print ts.name ## for debugging
             tsobjYes = data_validate(tsobj_grouped, ts, src)
             st =  write2_cassandra(tsobjYes, ts, src)
-                
-    data_delete(st, src)
+    
+    if success == False:
+        data_move(src, ERROR_CSV)            
+    else :    
+        data_delete(st, src)
 
 
 def data_move(src, dst):
@@ -239,7 +244,7 @@ def import_geotiff(src, filename, dst, usr):
         logger.error("[x] unauthorized user to this timeseries")
         data_delete(1, src)
     
-
+### TO BE RE-DO
 @celery.task
 def import_lmw(src, fileName):
     date_spec = {"timedate": [0, 1]}
