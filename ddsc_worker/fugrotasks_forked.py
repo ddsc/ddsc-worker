@@ -20,8 +20,8 @@ from ddsc_worker.import_auth import get_timestamp_by_filename
 from ddsc_worker.import_auth import get_remoteid_by_filename
 from ddsc_worker.import_auth import get_timeseries_by_remoteid
 from ddsc_worker.import_auth import get_auth
-#from ddsc_worker.import_auth import get_usr_by_folder
-#from ddsc_worker.import_auth import get_usr_by_folder
+
+from django.conf import settings
 
 
 @after_setup_task_logger.connect
@@ -40,7 +40,8 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
-ERROR_CSV = "/home/shaoqing/rejected_csv"
+pd = getattr(settings,'PATH_DST')
+ERROR_CSV = pd['rejected_csv']
 
 
 def data_convert(src):
