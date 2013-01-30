@@ -107,13 +107,12 @@ def data_validate(tsOBJ, ts, src=None):
 def write2_cassandra(tsOBJ_yes, ts, src):
     # DONE: write to Cassandra and Postgres
     # DONE: follow Carsten's coming code
-    print 'are we here'  ## debug purpose
     try :
         tsOBJ_yes = tsOBJ_yes.tz_localize('UTC')
         ts.set_events(tsOBJ_yes)
         ts.save()
         wStatus = 1
-        print ("[x] %r _written" % (src))
+        print ("[x] %r --> %r _written" % (src, ts.code))
         logger.info("[x] %r _written" % (src))
     except :
         logger.error("[x] %r _FAILED to write to cassandra" % (src))
