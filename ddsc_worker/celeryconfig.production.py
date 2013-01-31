@@ -1,1 +1,0 @@
-"""Celery production settings"""
