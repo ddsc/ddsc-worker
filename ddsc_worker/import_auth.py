@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 def get_auth(usr, remote_id):
     #  TODO: put the commented back after fixing has_perm problem
-    ts = get_timeseries_by_remoteid(remote_id, usr)
+    ts = get_timeseries_by_remoteid(usr, remote_id)
     logger.warning('Now, permission is always granted since usr.has_perm misbehave!')
 #    if usr.has_perm(PERMISSION_CHANGE, ts) :
 #        print 'should print out'
@@ -43,7 +43,7 @@ def get_usr_by_ip(fileName):
         return usr
     except IPAddress.DoesNotExist :
         logger.error("Ip address: %r does not exist in data base" % iplable)
-        return 0
+        return False
         
         
 def get_usr_by_folder(pathDir):
@@ -62,7 +62,7 @@ def get_usr_by_folder(pathDir):
         return 0
     
     
-def get_timeseries_by_remoteid(remoteid, usr):
+def get_timeseries_by_remoteid(usr, remoteid):
     #  TODO:
     #  get sensor_id from fileName
     #  TODO: intercept sensor_id from fileName

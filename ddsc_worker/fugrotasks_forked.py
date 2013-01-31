@@ -185,7 +185,7 @@ def import_file(src, filename, dst, usr):
     timestamp = get_timestamp_by_filename(filename)
     
     remoteid = get_remoteid_by_filename(filename)
-    ts = get_timeseries_by_remoteid(remoteid, usr)
+    ts = get_auth(usr, remoteid)
     
     str_year = str(timestamp.year[0])
     str_month = str(timestamp.month[0])
@@ -193,24 +193,26 @@ def import_file(src, filename, dst, usr):
     store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
     store_dstf = store_dst + filename
     
-    values = {"value": store_dstf}
-    if usr.has_perm('change', ts) :
+    values = {"Value": store_dstf}  ## 'Value' should be 'value'
+    if ts is not False :
         ts.set_event(timestamp[0], values)
         ts.save()
-        data_move(src, store_dst)
+        data_move(src+filename, store_dst)
         logger.info("[x] %r has been written and moved to %r" % (filename, store_dst))
     else:
         logger.error("[x] unauthorized user to this timeseries")
-        data_delete(1, src)
+        data_delete(1, src+filename)
 
 
 @celery.task(ignore_result=True)
 def import_geotiff(src, filename, dst, usr):
+    src = src + filename
+    
     logger.info("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
     
     remoteid = get_remoteid_by_filename(filename)
-    ts = get_timeseries_by_remoteid(remoteid, usr)
+    ts = get_auth(usr, remoteid)
     
     str_year = str(timestamp.year[0])
     str_month = str(timestamp.month[0])
@@ -218,14 +220,14 @@ def import_geotiff(src, filename, dst, usr):
     store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
     store_dstf = store_dst + filename
     
-    logger.info("[x] publishing %r into GeoServer..." % (src))
+    logger.info("[x] publishing %r into GeoServer..." % src)
 
     #  since it is a subprocess, we are not sure if it has been
     #  executed properly or not... Further check need to be done
     #  before proceed to the next stage
-    values = {"value": store_dstf}
+    values = {"Value": store_dstf}
     
-    if usr.has_perm('change', ts) :
+    if ts is not False:
         hao = call(['java', '-jar',
         '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/gs_push.jar',
         src, ts.code, str_day + str_month + str_year])
