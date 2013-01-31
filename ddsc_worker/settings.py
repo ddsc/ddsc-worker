@@ -132,6 +132,11 @@ MIDDLEWARE_CLASSES = (
     'lizard_security.middleware.SecurityMiddleware',
     )
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'ddsc_core.backends.PermissionBackend',
+)
+
 INSTALLED_APPS = (
     'lizard_ui',
     'lizard_security',  # before ddsc_core
