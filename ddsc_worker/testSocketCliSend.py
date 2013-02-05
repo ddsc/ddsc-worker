@@ -20,7 +20,7 @@ try:
     s.connect((host,port))
     print 'connected'
     for i in range(1,100):
-        rowstr = '2000-01-02T00:00:00Z,SocketP5007Fugro,1' + str(i)
+        rowstr = '2002-01-02T00:00:00Z,fugro001,1' + str(i)
         s.send(rowstr)
         time.sleep(1)  # TO VALIDATE TS OBJECT write our own functions here
     s.close()

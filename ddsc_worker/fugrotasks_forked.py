@@ -112,7 +112,7 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         ts.set_events(tsOBJ_yes)
         ts.save()
         wStatus = 1
-        print ("[x] %r --> %r _written" % (src, ts.code))
+        print ("[x] %r --> %r _written" % (src, ts.uuid))
         logger.info("[x] %r _written" % (src))
     except :
         logger.error("[x] %r _FAILED to write to cassandra" % (src))
@@ -187,14 +187,14 @@ def import_file(src, filename, dst, usr):
     remoteid = get_remoteid_by_filename(filename)
     ts = get_auth(usr, remoteid)
     
-    str_year = str(timestamp.year[0])
-    str_month = str(timestamp.month[0])
-    str_day = str(timestamp.day[0])
-    store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
-    store_dstf = store_dst + filename
-    
-    values = {"Value": store_dstf}  ## 'Value' should be 'value'
     if ts is not False :
+        str_year = str(timestamp.year[0])
+        str_month = str(timestamp.month[0])
+        str_day = str(timestamp.day[0])
+        store_dst = dst + ts.uuid+ '/' + str_year + '-' + str_month + '-' + str_day + '/'
+        store_dstf = store_dst + filename
+        values = {"value": store_dstf}  
+        
         ts.set_event(timestamp[0], values)
         ts.save()
         data_move(src+filename, store_dst)
@@ -217,7 +217,7 @@ def import_geotiff(src, filename, dst, usr):
     str_year = str(timestamp.year[0])
     str_month = str(timestamp.month[0])
     str_day = str(timestamp.day[0])
-    store_dst = dst + ts.code+ '/' + str_day + str_month + str_year + '/'
+    store_dst = dst + ts.uuid+ '/' + str_year + '-' + str_month + '-' + str_day + '/'
     store_dstf = store_dst + filename
     
     logger.info("[x] publishing %r into GeoServer..." % src)
@@ -225,12 +225,18 @@ def import_geotiff(src, filename, dst, usr):
     #  since it is a subprocess, we are not sure if it has been
     #  executed properly or not... Further check need to be done
     #  before proceed to the next stage
-    values = {"Value": store_dstf}
+    values = {"value": store_dstf}
     
     if ts is not False:
-        hao = call(['java', '-jar',
-        '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/gs_push.jar',
-        src, ts.code, str_day + str_month + str_year])
+        str_year = str(timestamp.year[0])
+        str_month = str(timestamp.month[0])
+        str_day = str(timestamp.day[0])
+        store_dst = dst + ts.uuid+ '/' + str_year + '-' + str_month + '-' + str_day + '/'
+        store_dstf = store_dst + filename
+        
+        hao = call(['java', '-jar', 
+                    '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/geotif_publish.jar', 
+                    src, 'http://10.10.101.118:8080/geoserver'])
         if hao == 0:
             print "[x] _published %r to GeoServer" % src
             logger.info("[x] Published %r to GeoServer " % src)
