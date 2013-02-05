@@ -138,10 +138,10 @@ AUTHENTICATION_BACKENDS = (
 )
 
 INSTALLED_APPS = (
-    'lizard_ui',
-    'lizard_security',  # before ddsc_core
+    'lizard_security',
+    'lizard_ui',  # after lizard-security
     'ddsc_worker',
-    'ddsc_core',
+    'ddsc_core',  # after lizard-security
     'south',
     'compressor',
     'staticfiles',
@@ -154,7 +154,6 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'gunicorn',
 )
 
 # TODO: Put your real url here to configure Sentry.
@@ -165,7 +164,7 @@ UI_GAUGES_SITE_ID = ''  # Staging has a separate one.
 
 
 try:
-    from ddsc_worker.localproductionsettings import *
+    from ddsc_worker.localproductionsettings import *  # NOQA
     # For local production overrides (DB passwords, for instance)
 except ImportError:
     pass
