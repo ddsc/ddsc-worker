@@ -25,11 +25,11 @@ def get_auth(usr, remote_id):
     #  TODO: put the commented back after fixing has_perm problem
     ts = get_timeseries_by_remoteid(usr, remote_id)
     logger.warning('Now, permission is always granted since usr.has_perm misbehave!')
-#    if usr.has_perm(PERMISSION_CHANGE, ts) :
-#        print 'should print out'
-#        return ts
-#    else :
-#        return False
+    if usr.has_perm(PERMISSION_CHANGE, ts) :
+        print 'should print out'
+        return ts
+    else :
+        return False
     return ts
 
 def get_usr_by_ip(fileName):
@@ -54,6 +54,7 @@ def get_usr_by_folder(pathDir):
         folder = Folder.objects.get(path=pathDir)
     except Folder.DoesNotExist :
         logger.error("Path Name : %r does not exist in data base" % pathDir)
+        return 0
     try :
         usr = User.objects.get(id=folder.user_id)
         return usr
@@ -73,10 +74,10 @@ def get_timeseries_by_remoteid(usr, remoteid):
     except IdMapping.DoesNotExist :
         logger.info("No such timeseries remoteID : %r---%r in database or it is already an interanl id" % (usr.username, remoteid))
         try : 
-            ts = Timeseries.objects.get(code=remoteid)
+            ts = Timeseries.objects.get(uuid=remoteid)
             return ts
         except Timeseries.DoesNotExist :
-            logger.error("No permission to write timeseries with remoteID: %r by: %r" %(remoteid, usr.username))
+            logger.error("sorry, %r is not an internal id neither" % remoteid)
             return 0
         
 def get_remoteid_by_filename(filename): # file name should be: <timeseries_id>_<datetime>.*

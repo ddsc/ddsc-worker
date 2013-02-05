@@ -10,8 +10,6 @@ from celery.utils.log import get_task_logger
 # from ddsc_worker.fugrotasks import data_delete
 from ddsc_worker.fugrotasks_forked import import_csv
 from ddsc_worker.fugrotasks_forked import data_move
-from ddsc_worker.fugrotasks_forked import imagename_write_DB
-from ddsc_worker.fugrotasks_forked import publish_gserver
 
 import sys
 import os
@@ -41,13 +39,7 @@ def main():
     series_code = "3201.WATHTE.onder.instantaneous"        
     sensorid = series_code
 #    usr = get_usr(ip_lable)
-#    print usr
- #   sensorid = get_sensor_id(series_code)
-#    usr = "spd"
-#    sensorid = "001fugro"
 
-#    tt = auth_func(usr, sensorid)
-#    print tt
         
     if fileExtension == ".filepart":
         # TODO

@@ -3,15 +3,22 @@ Created on Jan 28, 2013
 @author: LuS
 '''
 from __future__ import absolute_import
-from celery.signals import after_setup_task_logger
-from celery.utils.log import get_task_logger
+import logging
 
-from ddsc_worker.fugrotasks_forked import import_csv
+from ddsc_worker.fugrotasks_forked import import_csv, data_delete
 from ddsc_worker.import_auth import get_usr_by_ip
 
 import sys
 import string
 import os
+
+logger = logging.getLogger(__name__)
+
+hdlr = logging.FileHandler('/home/shaoqing/ddsc.log')
+formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.INFO)
 
 def main():
     dstPathDir = "/home/shaoqing/dst"  # TO BE put in django settings
@@ -24,6 +31,10 @@ def main():
     
     usr = get_usr_by_ip(fileName)
     
+    if usr is False :
+        data_delete(1, src)
+        return
+    
     if fileExtension == ".filepart":
         fileName = fileName.replace(".filepart","")
         src = pathDir + fileName
@@ -31,8 +42,7 @@ def main():
     #if auth_func(usr, sensorid):
     if fileExtension == ".csv":
             # csv_detected.delay(src)
-#        import_csv.delay(src, usr)
-        print 'this user is:' + usr.username
+        import_csv.delay(src, usr)
     else :
         file_ignored.delay(src, fileExtension)
     
