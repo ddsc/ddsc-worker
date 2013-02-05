@@ -14,6 +14,10 @@ import logging
 
 from daemon import runner
 
+from django.conf import settings
+
+DST_PATHS = getattr(settings, 'PATH_DST')
+
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
     def handle(self):
@@ -22,7 +26,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
         current_time = time.time()
         timeout = 20
         
-        path = '/home/alex/testdata/socket/'   ## TO BE put in a django setting file
+        path = DST_PATHS['socket']   ## TO BE put in a django setting file
         fileName = self.client_address[0] + '_' + str(self.client_address[1]) + '_'
         
         i=1
