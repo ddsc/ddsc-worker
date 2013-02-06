@@ -30,6 +30,7 @@ def setup_ddsc_task_logger(**kwargs):
 
 logger = get_task_logger(__name__)
 
+
 def main():
     ## dummy HDFS folder
     pathDir = sys.argv[1] + "/"
@@ -38,12 +39,11 @@ def main():
     # dst = dstPathDir + '/' + fileName
     fileDirName, fileExtension = os.path.splitext(src)
     fileExtension = string.lower(fileExtension)
-    
+
     usr = get_usr_by_folder(pathDir)
 
-
     if fileExtension == ".filepart":
-        fileName = fileName.replace(".filepart","")
+        fileName = fileName.replace(".filepart", "")
         src = pathDir + fileName
         fileDirName, fileExtension = os.path.splitext(src)
     #if auth_func(usr, sensorid):
@@ -52,18 +52,18 @@ def main():
         import_csv.delay(src, usr)
     elif (fileExtension == ".png") or \
     (fileExtension == ".jpg") or \
-    fileExtension == ".jpeg" :
+    fileExtension == ".jpeg":
         dst = DST_PATHS['image']
         import_file.delay(pathDir, fileName, dst, usr)
     elif fileExtension == ".avi" or \
     fileExtension == ".wmv":
         dst = DST_PATHS['video']
         import_file.delay(pathDir, fileName, dst, usr)
-    elif fileExtension == ".pdf" :
+    elif fileExtension == ".pdf":
         dst = DST_PATHS['pdf']
         import_file.delay(pathDir, fileName, dst, usr)
     elif (fileExtension == ".tif" or \
-    fileExtension == ".tiff") :
+    fileExtension == ".tiff"):
         dst = DST_PATHS['geotiff']
         import_geotiff.delay(pathDir, fileName, dst, usr)
     else:
@@ -97,4 +97,3 @@ def file_ignored(src, fileExtension):
     % (fileExtension, src))
     dst = DST_PATHS['unrecognized']
     data_move(src, dst)
-
