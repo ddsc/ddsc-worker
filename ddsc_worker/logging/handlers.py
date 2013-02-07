@@ -1,6 +1,8 @@
 from __future__ import absolute_import
-from ddsc_worker.logging.tasks import log
+
 import logging
+
+from ddsc_worker.logging.tasks import log
 
 
 class DDSCHandler(logging.Handler):
