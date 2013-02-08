@@ -26,7 +26,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                     (self.client_address[0], self.client_address[1]))
         first_time = time.time()
         current_time = time.time()
-        timeout = 60
+        timeout = 10
         path = DST_PATHS['socket']   # TO BE put in a django setting file
         fileName = self.client_address[0] + '_' + \
             str(self.client_address[1]) + '_'
@@ -38,7 +38,10 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                 try:
                     self.request.send("ok")
                     data = self.request.recv(1024)
-                    f.write(data + '\r\n')
+                    #data = data.replace('\r', '')
+                    #data = data.replace('\n', '')
+                    #f.write(data + '\r\n')
+                    f.write(data)
                     logger.debug("%r:%r wrote a line in %r" % (
                         self.client_address[0],
                         self.client_address[1], f))
