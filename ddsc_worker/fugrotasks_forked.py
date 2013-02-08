@@ -31,17 +31,16 @@ def setup_ddsc_task_logger(**kwargs):
         "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"))
     logger.addHandler(handler)
 
+pd = getattr(settings, 'PATH_DST')
+ERROR_CSV = pd['rejected_csv']
 
 logger = logging.getLogger(__name__)
 
-hdlr = logging.FileHandler('/home/shaoqing/ddsc.log')
+hdlr = logging.FileHandler(pd['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
-
-pd = getattr(settings, 'PATH_DST')
-ERROR_CSV = pd['rejected_csv']
 
 
 def data_convert(src):
@@ -235,8 +234,8 @@ def import_geotiff(src, filename, dst, usr):
         store_dstf = store_dst + filename
 
         hao = call(['java', '-jar',
-            '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/geotif_pub.jar',\
-            src, 'http://10.10.101.118:8080/geoserver'])
+            pd['geoserver_jar_pusher'],\
+            src, pd['geoserver_url']])
         if hao == 0:
             print "[x] _published %r to GeoServer" % src
             logger.info("[x] Published %r to GeoServer " % src)

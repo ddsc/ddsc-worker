@@ -58,7 +58,7 @@ class App():
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/tty'
         self.stderr_path = '/dev/tty'
-        self.pidfile_path = '/var/run/ddsc/tcpMthredDaemon.pid'
+        self.pidfile_path = DST_PATHS['socks_pid']
         self.pidfile_timeout = 5
 
     def run(self):
@@ -84,7 +84,7 @@ logger = logging.getLogger("DaemonLog")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter
 ("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler("/var/log/ddsc/testdaemon.log")
+handler = logging.FileHandler(DST_PATHS['socks_logging'])
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
