@@ -2,10 +2,10 @@ from __future__ import absolute_import
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 
-from ddsc_worker.fugrotasks_forked import import_csv
-from ddsc_worker.fugrotasks_forked import import_file
-from ddsc_worker.fugrotasks_forked import import_geotiff
-from ddsc_worker.fugrotasks_forked import data_move
+from ddsc_worker.importer import import_csv
+from ddsc_worker.importer import import_file
+from ddsc_worker.importer import import_geotiff
+from ddsc_worker.importer import data_move
 from ddsc_worker.import_auth import get_usr_by_folder
 
 from django.conf import settings
@@ -20,7 +20,7 @@ import logging
 
 DST_PATHS = getattr(settings, 'PATH_DST')
 
-@after_setup_task_logger.connect
+
 def setup_ddsc_task_logger(**kwargs):
     handler = DDSCHandler()
     handler.setFormatter(logging.Formatter(
@@ -36,7 +36,7 @@ def main():
     pathDir = sys.argv[1] + "/"
     fileName = sys.argv[2]
     src = pathDir + fileName
-    # dst = dstPathDir + '/' + fileName
+
     fileDirName, fileExtension = os.path.splitext(src)
     fileExtension = string.lower(fileExtension)
 
