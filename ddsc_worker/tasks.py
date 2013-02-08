@@ -26,7 +26,7 @@ logger = get_task_logger(__name__)
 
 @celery.task
 def add(x, y):
-    logger.error("Adding %r + %r" % (x, y))
+    logger.info("Adding %r + %r" % (x, y))
     time.sleep(9)
     return x + y
 
