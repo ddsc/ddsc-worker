@@ -5,7 +5,7 @@ Created on Jan 28, 2013
 from __future__ import absolute_import
 import logging
 
-from ddsc_worker.fugrotasks_forked import import_csv, data_delete
+from ddsc_worker.importer import import_csv, data_delete
 from ddsc_worker.import_auth import get_usr_by_ip
 from django.conf import settings
 import sys

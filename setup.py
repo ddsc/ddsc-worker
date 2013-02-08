@@ -41,7 +41,7 @@ setup(name='ddsc-worker',
       install_requires=install_requires,
       entry_points={
           'console_scripts': [
-          'call_by_incron_forked = ddsc_worker.call_by_incron_forked:main',
+          'call_by_incron_main = ddsc_worker.call_by_incron_main:main',
           'call_by_incron_lmw = ddsc_worker.call_by_incron_lmw:main',
           'call_by_incron_socket = ddsc_worker.call_by_incron_socket:main',
           ]},
