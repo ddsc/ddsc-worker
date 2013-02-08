@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from celery.utils.log import get_task_logger
 from celery.signals import after_setup_task_logger
 from ddsc_worker.logging.handlers import DDSCHandler
 import logging
@@ -7,9 +6,6 @@ import logging
 from ddsc_worker.celery import celery
 
 from pandas.io.parsers import read_csv
-import pandas as pd
-
-from ddsc_core.models import Timeseries
 
 from os import remove
 import os
@@ -18,7 +14,6 @@ from subprocess import call
 
 from ddsc_worker.import_auth import get_timestamp_by_filename
 from ddsc_worker.import_auth import get_remoteid_by_filename
-from ddsc_worker.import_auth import get_timeseries_by_remoteid
 from ddsc_worker.import_auth import get_auth
 
 from django.conf import settings
@@ -52,7 +47,7 @@ def data_convert(src):
         names=['SensorID', 'value'])
         status = 1
     except:
-        print 'CSV file: ' + src + 'ERROR to convert!'
+        logger.error('CSV file: %r ERROR to convert!' % src)
         status = 0
     if status == 0:
         logger.error("[x] %r _FAILED to be converted" % (src))
@@ -62,8 +57,6 @@ def data_convert(src):
     else:
         tsOBJ['flag'] = 'None'
         tsOBJ = tsOBJ.sort()
-        # self.data_validate(tsOBJ)
-        print "[x]  %r _converted & sorted" % (src)
         logger.info("[x] %r _converted & sorted" % (src))
         return tsOBJ
 
@@ -94,7 +87,6 @@ def data_validate(tsOBJ, ts, src=None):
         else:
             tsOBJ['flag'][i] = '0'
             i += 1
-    print "[x] %r  _validated" % (src)
     logger.info("[x] %r _validated" % (src))
     return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
 
@@ -108,7 +100,6 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         ts.set_events(tsOBJ_yes)
         ts.save()
         wStatus = 1
-        print ("[x] %r --> %r _written" % (src, ts.uuid))
         logger.info("[x] %r _written" % (src))
     except:
         logger.error("[x] %r _FAILED to write to cassandra" % (src))
@@ -122,11 +113,9 @@ def data_delete(wStatus, src):
     if wStatus == 1:
         remove(src)
         if 1 == 2:
-        #            TODO
-        #            ERROR Handeling
+            logger.error('something went wrong')
             pass
         else:
-            print " [x]  %r _deleted" % (src)
             logger.info("[x] %r _deleted" % (src))
     else:
         pass
@@ -162,11 +151,9 @@ def data_move(src, dst):
     try:
         shutil.move(src, dst)
         if os.path.isdir(dst):
-            print ("[x] Moved %r to %r" % (src, dst))
             logger.info("[x] Moved %r to %r" % (src, dst))
             return os.path.join(dst, os.path.split(src)[1])
         else:
-            print ("[x] Moved %r to %r" % (src, dst))
             logger.info("[x] Moved %r to %r" % (src, dst))
             return dst
     except EnvironmentError as e:
@@ -237,7 +224,6 @@ def import_geotiff(src, filename, dst, usr):
             pd['geoserver_jar_pusher'],\
             src, pd['geoserver_url']])
         if hao == 0:
-            print "[x] _published %r to GeoServer" % src
             logger.info("[x] Published %r to GeoServer " % src)
             ts.set_event(timestamp[0], values)
             ts.save()
@@ -245,7 +231,6 @@ def import_geotiff(src, filename, dst, usr):
             logger.info("[x] %r has been written and moved to %r" %\
                 (filename, store_dst))
         else:
-            print "[x] Publishing error"
             logger.error("[x] Publishing error")
     else:
         logger.error("[x] unauthorized user to this timeseries")
@@ -297,13 +282,11 @@ def import_lmw(src, fileName):
             else:
                 tsOBJ['flag'][i] = '6'
                 i += 1
-    print "[x] %r  _validated" % (src)
     logger.info("[x] %r _validated" % (src))
     tsOBJ = tsOBJ.tz_localize('UTC')
     del tsOBJ['location']
     del tsOBJ['met']
     del tsOBJ['q_flag']
-    print tsOBJ
 
     st = write2_cassandra(tsOBJ, src)
 
