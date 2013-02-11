@@ -26,7 +26,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                     (self.client_address[0], self.client_address[1]))
         first_time = time.time()
         current_time = time.time()
-        timeout = 10
+        timeout = SOCKS_SETTINGS['time_per_csv']  # in seconds
         path = DST_PATHS['socket']   # TO BE put in a django setting file
         fileName = self.client_address[0] + '_' + \
             str(self.client_address[1]) + '_'
