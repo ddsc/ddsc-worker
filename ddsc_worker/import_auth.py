@@ -9,13 +9,14 @@ from ddsc_core.models.models import Timeseries, IdMapping
 from ddsc_core.models.system import IPAddress, Folder
 from ddsc_core.auth import PERMISSION_CHANGE
 from django.contrib.auth.models import User
+from django.conf import settings
 
-from django.contrib.auth.models import Group
+import pandas
 
-import pandas as pd
+pd = getattr(settings, 'PATH_DST')
 
 logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler('/home/shaoqing/ddsc.log')
+hdlr = logging.FileHandler(pd['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
@@ -103,5 +104,5 @@ def get_timestamp_by_filename(filename):
     f1 = filename.find("_")
     f2 = filename.find(".")
     tmstmp = filename[f1 + 1:f2]
-    timestamp = pd.date_range(tmstmp, periods=1)
+    timestamp = pandas.date_range(tmstmp, periods=1)
     return timestamp
