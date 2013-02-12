@@ -18,7 +18,7 @@ from ddsc_worker.logging.handlers import DDSCHandler
 from ddsc_worker.celery import celery
 import logging
 
-DST_PATHS = getattr(settings, 'PATH_DST')
+DST_PATHS = getattr(settings, 'IMPORTER')
 
 
 def setup_ddsc_task_logger(**kwargs):

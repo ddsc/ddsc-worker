@@ -13,9 +13,9 @@ import string
 import os
 
 
-DST_PATHS = getattr(settings, 'PATH_DST')
+LOG_PATH = getattr(settings, 'LOGGING_DST')
 logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler(DST_PATHS['ddsc_logging'])
+hdlr = logging.FileHandler(LOG_PATH['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)

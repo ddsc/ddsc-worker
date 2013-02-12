@@ -26,12 +26,13 @@ def setup_ddsc_task_logger(**kwargs):
         "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"))
     logger.addHandler(handler)
 
-pd = getattr(settings, 'PATH_DST')
+pd = getattr(settings, 'IMPORTER')
+LOGGING_PATH = getattr(settings, 'LOGGING_DST')
 ERROR_CSV = pd['rejected_csv']
 
 logger = logging.getLogger(__name__)
 
-hdlr = logging.FileHandler(pd['ddsc_logging'])
+hdlr = logging.FileHandler(LOGGING_PATH['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)

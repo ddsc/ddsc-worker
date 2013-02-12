@@ -16,8 +16,8 @@ import logging
 
 from django.conf import settings
 
-SOCKS_SETTINGS = getattr(settings, 'SOCKS_INFO')
-DST_PATHS = getattr(settings, 'PATH_DST')
+SOCKS_SETTINGS = getattr(settings, 'SOCKS')
+LOG_DST = getattr(settings, 'LOGGING_DST')
 
 
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
@@ -27,7 +27,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
         first_time = time.time()
         current_time = time.time()
         timeout = SOCKS_SETTINGS['time_per_csv']  # in seconds
-        path = DST_PATHS['socket']   # TO BE put in a django setting file
+        path = SOCKS_SETTINGS['socket_dst']
         fileName = self.client_address[0] + '_' + \
             str(self.client_address[1]) + '_'
         i = 1
@@ -38,9 +38,6 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                 try:
                     self.request.send("ok")
                     data = self.request.recv(1024)
-                    #data = data.replace('\r', '')
-                    #data = data.replace('\n', '')
-                    #f.write(data + '\r\n')
                     f.write(data)
                     logger.debug("%r:%r wrote a line in %r" % (
                         self.client_address[0],
@@ -88,7 +85,7 @@ logger = logging.getLogger("DaemonLog")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler(SOCKS_SETTINGS['logging_dst'])
+handler = logging.FileHandler(LOG_DST['socks_logging'])
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
