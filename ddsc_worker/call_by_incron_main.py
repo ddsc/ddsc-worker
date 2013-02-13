@@ -54,23 +54,23 @@ def main():
     #if auth_func(usr, sensorid):
     if fileExtension == ".csv":
             # csv_detected.delay(src)
-        import_csv.delay(src, usr)
+        import_csv.delay(src, usr.id)
     elif (fileExtension == ".png") or \
     (fileExtension == ".jpg") or \
     fileExtension == ".jpeg":
         dst = DST_PATHS['image']
-        import_file.delay(pathDir, fileName, dst, usr)
+        import_file.delay(pathDir, fileName, dst, usr.id)
     elif fileExtension == ".avi" or \
     fileExtension == ".wmv":
         dst = DST_PATHS['video']
-        import_file.delay(pathDir, fileName, dst, usr)
+        import_file.delay(pathDir, fileName, dst, usr.id)
     elif fileExtension == ".pdf":
         dst = DST_PATHS['pdf']
-        import_file.delay(pathDir, fileName, dst, usr)
+        import_file.delay(pathDir, fileName, dst, usr.id)
     elif (fileExtension == ".tif" or \
     fileExtension == ".tiff"):
         dst = DST_PATHS['geotiff']
-        import_geotiff.delay(pathDir, fileName, dst, usr)
+        import_geotiff.delay(pathDir, fileName, dst, usr.id)
     else:
         file_ignored.delay(src, fileExtension)
 

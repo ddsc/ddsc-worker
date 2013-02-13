@@ -17,7 +17,7 @@ from ddsc_worker.import_auth import get_remoteid_by_filename
 from ddsc_worker.import_auth import get_auth
 
 from django.conf import settings
-
+from django.contrib.auth.models import User
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
@@ -121,9 +121,9 @@ def data_delete(wStatus, src):
 
 
 @celery.task
-def import_csv(src, usr):
+def import_csv(src, usr_id):
+    usr = User.objects.get(id=usr_id)
     tsobj = data_convert(src)
-#    usr = get_usr_by_folder(pathDir)
     tsgrouped = tsobj.groupby('SensorID')
     nr = len(tsgrouped)
     nr = str(nr)
@@ -163,7 +163,8 @@ def data_move(src, dst):
 
 
 @celery.task
-def import_file(src, filename, dst, usr):
+def import_file(src, filename, dst, usr_id):
+    usr = User.objects.get(id=usr_id)
     logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
@@ -191,7 +192,8 @@ def import_file(src, filename, dst, usr):
 
 
 @celery.task(ignore_result=True)
-def import_geotiff(src, filename, dst, usr):
+def import_geotiff(src, filename, dst, usr_id):
+    usr = User.objects.get(id=usr_id)
     src = src + filename
 
     logger.debug("[x] Importing %r to DB" % filename)

@@ -45,7 +45,7 @@ def main():
     if fileExtension == ".csv":
         logger.info('[x] start importing: %r' % src)
         logger.info('By User: %r' % usr.username)
-        import_csv.delay(src, usr)
+        import_csv.delay(src, usr.id)
     else:
         file_ignored(src, fileExtension)
 
