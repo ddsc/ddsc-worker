@@ -20,14 +20,14 @@ CASSANDRA = {
 SOCKS = {
     'host': '10.10.101.118',  # socket server hosts
     'port': 5008,
-    'time_per_csv': 60,  # every 1 minute forms a csv file
+    'time_per_csv': 10,  # every 1 minute forms a csv file
     'socket_dst':
         '/home/shaoqing/testdata/socket/',
 }
 
 IMPORTER = {
-    'rejected_csv':  # where to put the csv file when problem occurs
-        '/tmp/alex/dst/rejected_csv/', # 
+    'rejected_file':  # where to put the csv file when problem occurs
+        '/tmp/alex/dst/rejected_file/', # 
     'image':  # where to put the image data, path will be created automatically
         '/home/alex/dst/images/',
     'geotiff':  # where to put the rs image data, path will be created automatically
@@ -50,3 +50,4 @@ LOGGING_DST = {
     'socks_logging':
         '/home/shaoqing/gitrepo/ddsc-worker/var/log/socks.log',  # where to put socket logging file, path has to be existed
 }
+
