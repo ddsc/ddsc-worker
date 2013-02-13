@@ -28,7 +28,7 @@ def setup_ddsc_task_logger(**kwargs):
 
 pd = getattr(settings, 'IMPORTER')
 LOGGING_PATH = getattr(settings, 'LOGGING_DST')
-ERROR_CSV = pd['rejected_csv']
+ERROR_file = pd['rejected_file']
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ logger.setLevel(logging.INFO)
 def data_convert(src):
 #    pydevd.settrace()
     try:
-        logger.info("[x] converting %r to pandas object" % (src))
+        logger.debug("[x] converting %r to pandas object" % (src))
         tsOBJ = read_csv(src, index_col=0,
         parse_dates=True,
         names=['SensorID', 'value'])
@@ -51,14 +51,13 @@ def data_convert(src):
         logger.error('CSV file: %r ERROR to convert!' % src)
         status = 0
     if status == 0:
-        logger.error("[x] %r _FAILED to be converted" % (src))
-        data_move(src, ERROR_CSV)
-        logger.info("[x] %r _MOVED to  %r" % (src, ERROR_CSV))
+        logger.debug("[x] %r _FAILED to be converted" % (src))
+        data_move(src, ERROR_file)
         exit()
     else:
         tsOBJ['flag'] = 'None'
         tsOBJ = tsOBJ.sort()
-        logger.info("[x] %r _converted & sorted" % (src))
+        logger.debug("[x] %r _converted & sorted" % (src))
         return tsOBJ
 
 
@@ -72,7 +71,7 @@ def data_validate(tsOBJ, ts, src=None):
     diff_hard = ts.validate_diff_hard
     diff_soft = ts.validate_diff_soft
 
-    logger.info("[x] validating %r" % (src))
+    logger.debug("[x] validating %r" % (src))
     i = 0
     for row in tsOBJ.iterrows():
         if ((diff_hard < abs(tsOBJ.value[i - 1] - tsOBJ.value[i]))
@@ -88,7 +87,7 @@ def data_validate(tsOBJ, ts, src=None):
         else:
             tsOBJ['flag'][i] = '0'
             i += 1
-    logger.info("[x] %r _validated" % (src))
+    logger.debug("[x] %r _validated" % (src))
     return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
 
 
@@ -101,11 +100,10 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         ts.set_events(tsOBJ_yes)
         ts.save()
         wStatus = 1
-        logger.info("[x] %r _written" % (src))
+        logger.debug("[x] %r _written" % (src))
     except:
-        logger.error("[x] %r _FAILED to write to cassandra" % (src))
-        data_move(src, ERROR_CSV)
-        logger.info("[x] %r _MOVED to %r" % (src, ERROR_CSV))
+        logger.debug("[x] %r _FAILED to write to cassandra" % (src))
+        data_move(src, ERROR_file)
         wStatus = 0
     return wStatus
 
@@ -117,7 +115,7 @@ def data_delete(wStatus, src):
             logger.error('something went wrong')
             pass
         else:
-            logger.info("[x] %r _deleted" % (src))
+            logger.debug("[x] %r _deleted" % (src))
     else:
         pass
 
@@ -129,7 +127,7 @@ def import_csv(src, usr):
     tsgrouped = tsobj.groupby('SensorID')
     nr = len(tsgrouped)
     nr = str(nr)
-    logger.info('There are %r timeseries in file : %r' % (nr, src))
+    logger.debug('There are %r timeseries in file : %r' % (nr, src))
     success = True
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
@@ -141,9 +139,11 @@ def import_csv(src, usr):
             st = write2_cassandra(tsobjYes, ts, src)
 
     if success == False:
-        data_move(src, ERROR_CSV)
+        logger.error('[x] File:--%r-- has been rejected' % src)
+        data_move(src, ERROR_file)
     else:
         data_delete(st, src)
+        logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
 def data_move(src, dst):
@@ -152,19 +152,19 @@ def data_move(src, dst):
     try:
         shutil.move(src, dst)
         if os.path.isdir(dst):
-            logger.info("[x] Moved %r to %r" % (src, dst))
+            logger.debug("[x] Moved %r to %r" % (src, dst))
             return os.path.join(dst, os.path.split(src)[1])
         else:
-            logger.info("[x] Moved %r to %r" % (src, dst))
+            logger.debug("[x] Moved %r to %r" % (src, dst))
             return dst
     except EnvironmentError as e:
         logger.error(e)
-        exit()
+        return
 
 
 @celery.task
 def import_file(src, filename, dst, usr):
-    logger.info("[x] Importing %r to DB" % filename)
+    logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
     remoteid = get_remoteid_by_filename(filename)
@@ -183,9 +183,10 @@ def import_file(src, filename, dst, usr):
         ts.save()
         data_move(src + filename, store_dst)
         logger.info(
-            "[x] %r has been written and moved to %r" % (filename, store_dst))
+            '[x] File:--%r-- has been successfully imported' % (src +
+            filename))
     else:
-        logger.error("[x] unauthorized user to this timeseries")
+        logger.error('[x] File:--%r-- has been rejected' % (src + filename))
         data_delete(1, src + filename)
 
 
@@ -193,7 +194,7 @@ def import_file(src, filename, dst, usr):
 def import_geotiff(src, filename, dst, usr):
     src = src + filename
 
-    logger.info("[x] Importing %r to DB" % filename)
+    logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
     remoteid = get_remoteid_by_filename(filename)
@@ -206,7 +207,7 @@ def import_geotiff(src, filename, dst, usr):
         str_year + '-' + str_month + '-' + str_day + '/'
     store_dstf = store_dst + filename
 
-    logger.info("[x] publishing %r into GeoServer..." % src)
+    logger.debug("[x] publishing %r into GeoServer..." % src)
 
     #  since it is a subprocess, we are not sure if it has been
     #  executed properly or not... Further check need to be done
@@ -225,17 +226,19 @@ def import_geotiff(src, filename, dst, usr):
             pd['geoserver_jar_pusher'],\
             src, pd['geoserver_url']])
         if hao == 0:
-            logger.info("[x] Published %r to GeoServer " % src)
+            logger.debug("[x] Published %r to GeoServer " % src)
             ts.set_event(timestamp[0], values)
             ts.save()
             data_move(src, store_dst)
-            logger.info("[x] %r has been written and moved to %r" %\
-                (filename, store_dst))
+            logger.info(
+                "[x] File:--%r-- has been successfully imported" % src)
         else:
-            logger.error("[x] Publishing error")
+            logger.debug("[x] Publishing error")
+            logger.error('[x] File:--%r-- has been rejected', src)
+            data_move(src, ERROR_file)
     else:
-        logger.error("[x] unauthorized user to this timeseries")
-        data_delete(1, src)
+        logger.error('[x] File:--%r-- has been rejected', src)
+        data_move(src, ERROR_file)
 
 
 @celery.task

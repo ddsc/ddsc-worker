@@ -5,7 +5,7 @@ Created on Jan 28, 2013
 from __future__ import absolute_import
 import logging
 
-from ddsc_worker.importer import import_csv, data_delete
+from ddsc_worker.importer import import_csv, data_move
 from ddsc_worker.import_auth import get_usr_by_ip
 from django.conf import settings
 import sys
@@ -21,6 +21,8 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
+DST_PATH = getattr(settings, 'IMPORTER')
+
 
 def main():
     pathDir = sys.argv[1] + "/"
@@ -32,7 +34,7 @@ def main():
     usr = get_usr_by_ip(fileName)
 
     if usr is False:
-        data_delete(1, src)
+        data_move(src, DST_PATH['rejected_csv'])
         return
 
     if fileExtension == ".filepart":
@@ -41,9 +43,11 @@ def main():
         fileDirName, fileExtension = os.path.splitext(src)
     #if auth_func(usr, sensorid):
     if fileExtension == ".csv":
+        logger.info('[x] start importing: %r' % src)
+        logger.info('By User: %r' % usr.username)
         import_csv.delay(src, usr)
     else:
-        file_ignored.delay(src, fileExtension)
+        file_ignored(src, fileExtension)
 
 
 def file_ignored(src, fileExtension):

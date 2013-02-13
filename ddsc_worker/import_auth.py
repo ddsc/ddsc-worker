@@ -26,22 +26,23 @@ logger.setLevel(logging.INFO)
 def get_auth(usr, remote_id):
     #  TODO: put the commented back after fixing has_perm problem
     ts = get_timeseries_by_remoteid(usr, remote_id)
+    if ts == 0:
+        return False
     if usr.has_perm(PERMISSION_CHANGE, ts):
-        logger.info(
+        logger.debug(
             'user: %r has permission to timeseries: %r' %
-            (usr.username, ts.name)
+            (usr.username, ts.uuid)
         )
         return ts
     else:
         logger.error(
             'user: %r has NO permission to timeseries: %r' %
-            (usr.username, ts.name)
+            (usr.username, ts.uuid)
         )
         return False
 
 
 def get_usr_by_ip(fileName):
-    #  TODO:
     #  the seperator shall be _ like 192.168.22.130_bla001.csv
     f = fileName.find("_")
     iplable = fileName[0:f]
@@ -55,7 +56,7 @@ def get_usr_by_ip(fileName):
 
 
 def get_usr_by_folder(pathDir):
-    usr_name = pathDir.replace("/home/", "")
+    usr_name = pathDir.replace("/home/", "")  # Prefix to T.B.D
     f = usr_name.find("/")
     usr_name = usr_name[0:f]
     try:
@@ -72,22 +73,18 @@ def get_usr_by_folder(pathDir):
 
 
 def get_timeseries_by_remoteid(usr, remoteid):
-    #  TODO:
-    #  get sensor_id from fileName
-    #  TODO: intercept sensor_id from fileName
     try:
         idmp = IdMapping.objects.get(user=usr, remote_id=remoteid)
         ts = idmp.timeseries
         return ts
     except IdMapping.DoesNotExist:
-        logger.info(
-            "No such timeseries remoteID : %r---%r in database\
-            or it is already an internal id"
-            % (usr.username, remoteid)
+        logger.debug(
+            'No such timeseries remoteID : %r---%r in database or it is already an internal id'
+             % (usr.username, remoteid)
         )
         try:
             ts = Timeseries.objects.get(uuid=remoteid)
-            logger.info('It is already an internal id')
+            logger.debug('It is already an internal id')
             return ts
         except Timeseries.DoesNotExist:
             logger.error("sorry, %r is not an internal id neither" % remoteid)

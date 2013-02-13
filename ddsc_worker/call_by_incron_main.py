@@ -18,17 +18,16 @@ from ddsc_worker.logging.handlers import DDSCHandler
 from ddsc_worker.celery import celery
 import logging
 
+
 DST_PATHS = getattr(settings, 'IMPORTER')
 
-
-def setup_ddsc_task_logger(**kwargs):
-    handler = DDSCHandler()
-    handler.setFormatter(logging.Formatter(
-        "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"
-    ))
-    logger.addHandler(handler)
-
-logger = get_task_logger(__name__)
+LOG_PATH = getattr(settings, 'LOGGING_DST')
+logger = logging.getLogger(__name__)
+hdlr = logging.FileHandler(LOG_PATH['ddsc_logging'])
+formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.INFO)
 
 
 def main():
@@ -41,6 +40,12 @@ def main():
     fileExtension = string.lower(fileExtension)
 
     usr = get_usr_by_folder(pathDir)
+
+    if usr == 0:
+        return
+    else:
+        logger.info('[x] start importing: %r' % src)
+        logger.info('By User: %r' % usr.username)
 
     if fileExtension == ".filepart":
         fileName = fileName.replace(".filepart", "")
