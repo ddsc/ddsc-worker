@@ -56,9 +56,6 @@ def get_usr_by_ip(fileName):
 
 
 def get_usr_by_folder(pathDir):
-    usr_name = pathDir.replace("/home/", "")  # Prefix to T.B.D
-    f = usr_name.find("/")
-    usr_name = usr_name[0:f]
     try:
         folder = Folder.objects.get(path=pathDir)
     except Folder.DoesNotExist:
@@ -68,7 +65,7 @@ def get_usr_by_folder(pathDir):
         usr = User.objects.get(id=folder.user_id)
         return usr
     except User.DoesNotExist:
-        logger.error("User: %r does not exist in data base" % usr_name)
+        logger.error("User does not exist in data base")
         return 0
 
 
