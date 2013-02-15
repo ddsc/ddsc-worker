@@ -33,38 +33,60 @@ class Command(BaseCommand):
                 print 'logical_check: %r' % logical_check
                 for alm_itm in Alarm_Item.objects.filter(alarm_id=alm.id):
                     if alm_itm != []:
-                        ts = alm_itm.timeseries
-                        print 'checking timeseries: %r within \
-                        alarm item id %r' % (ts.name, alm_itm.id)
-                        if (alm_itm.last_checked
-                            - ts.latest_value_timestamp).days < 0:
-                            print 'checking alarm items id: %r' % alm_itm.id
-                            print 'comparasion type is\
-                             %r' % alm_itm.comparision
-                            print 'comparasion value type is\
-                             %r' % alm_itm.value_type
-                            print 'comparasion value is\
-                             %r' % alm_itm.value_double
-                            print 'timeseries value is\
-                             %r' % ts.latest_value_number
+                        try:
+                            ts_series = alm_itm.content_object.timeseries.all()
+                        except:
+                            ts_series = [alm_itm.content_object]
+                        logical_check_item = alm_itm.logical_check
+                        alarm_or_not_item = []
+                        for ts in ts_series:
+                            time_diff = alm_itm.last_checked \
+                                - ts.latest_value_timestamp
+                            time_diff_sec = abs(time_diff.days * 24 * 3600) + \
+                                time_diff.seconds + \
+                                time_diff.microseconds / 1000000
+                        # but I dont think microseconds is needed personally
+                            print 'time difference in seconds is: %r' \
+                                % time_diff_sec
+                            if time_diff_sec > (alm.frequency * 60):
+                                print 'checking timeseries: %r' % ts.uuid \
+                                    + 'within alarm item id %r' % alm_itm.id
+                                print 'comparison type is:' \
+                                    + '%r' % alm_itm.comparision
+                                print 'comparison value type is: ' \
+                                    + '%r' % alm_itm.value_type
+                                print 'comparison value is: ' \
+                                    + '%r' % alm_itm.value_double
+                                print 'timeseries value is: ' \
+                                    + '%r' % ts.latest_value_number
 
-                            alm_itm.last_checked = ts.latest_value_timestamp
-                            alm_itm.save()
-
-                            if alm_itm.value_type == 1:
-                                alarm_or_not.append(
-                                    compare(alm_itm.comparision,
-                                      alm_itm.value_double,
-                                      ts.latest_value_number)
-                                )
+                                if alm_itm.value_type == 1:
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                          alm_itm.value_double,
+                                          ts.latest_value_number)
+                                    )
+                                else:
+                                    print 'To do: dealing with \
+                                    non-waarde comparison!'
+                                alm_itm.last_checked \
+                                    = ts.latest_value_timestamp
+                                alm_itm.save()
                             else:
-                                print 'To do: dealling with \
-                                non-waarde comparision!'
-
-                        else:
-                            print 'current alarm item has already been checked'
+                                print 'current alarm item has' \
+                                    + 'already been checked'
+                    if alarm_or_not_item != []:
+                        ds = decision(alarm_or_not_item,
+                            logical_check_item)
+                        print 'alarm or not (item level)? ...: %r' \
+                            % alarm_or_not_item
+                        print 'alarm or not (item level) decision: ' \
+                            + '%r' % ds
+                        alarm_or_not.append(ds)
             if alarm_or_not != []:
-                print 'alarm or not? ...: %r' % alarm_or_not
+                print '-------------------------------------------------------'
+                print '-------------------------------------------------------'
+                print 'alarm or not (alarm level)? ...: %r' % alarm_or_not
                 print 'final alarm or not? \
                     %r' % decision(alarm_or_not, logical_check)
             alm.active_status = False
