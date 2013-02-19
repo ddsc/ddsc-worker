@@ -16,6 +16,7 @@ from subprocess import call
 from ddsc_worker.import_auth import get_timestamp_by_filename
 from ddsc_worker.import_auth import get_remoteid_by_filename
 from ddsc_worker.import_auth import get_usr_by_folder
+from ddsc_worker.import_auth import get_usr_by_ip
 from ddsc_worker.import_auth import get_auth
 
 from django.conf import settings
@@ -24,7 +25,7 @@ from django.contrib.auth.models import User
 
 pd = getattr(settings, 'IMPORTER_PATH')
 ERROR_file = pd['storage_base_path'] + pd['rejected_file']
-gs_setting = getattr(settings, 'IMPORT_GEOSERVER')
+gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 logger = logging.getLogger(__name__)
 
 hdlr = logging.FileHandler(pd['ddsc_logging'])
@@ -331,6 +332,20 @@ def new_file_detected(pathDir, fileName):
         import_geotiff(pathDir, fileName, dst, usr.id)
     else:
         file_ignored.delay(src, fileExtension)
+
+
+@celery.task
+def new_socket_detected(pathDir, fileName):
+    src = pathDir + fileName
+    usr = get_usr_by_ip(fileName)
+
+    if usr is False:
+        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
+        return
+
+    logger.info('[x] start importing: %r' % src)
+    logger.info('By User: %r' % usr.username)
+    import_csv(src, usr.id)
 
 
 def file_ignored(src, fileExtension):
