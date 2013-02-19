@@ -10,29 +10,24 @@ from pandas.io.parsers import read_csv
 from os import remove
 import os
 import shutil
+import string
 from subprocess import call
 
 from ddsc_worker.import_auth import get_timestamp_by_filename
 from ddsc_worker.import_auth import get_remoteid_by_filename
+from ddsc_worker.import_auth import get_usr_by_folder
 from ddsc_worker.import_auth import get_auth
 
 from django.conf import settings
 from django.contrib.auth.models import User
 
-@after_setup_task_logger.connect
-def setup_ddsc_task_logger(**kwargs):
-    handler = DDSCHandler()
-    handler.setFormatter(logging.Formatter(
-        "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"))
-    logger.addHandler(handler)
 
-pd = getattr(settings, 'IMPORTER')
-LOGGING_PATH = getattr(settings, 'LOGGING_DST')
-ERROR_file = pd['rejected_file']
-
+pd = getattr(settings, 'IMPORTER_PATH')
+ERROR_file = pd['storage_base_path'] + pd['rejected_file']
+gs_setting = getattr(settings, 'IMPORT_GEOSERVER')
 logger = logging.getLogger(__name__)
 
-hdlr = logging.FileHandler(LOGGING_PATH['ddsc_logging'])
+hdlr = logging.FileHandler(pd['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
@@ -120,7 +115,6 @@ def data_delete(wStatus, src):
         pass
 
 
-@celery.task
 def import_csv(src, usr_id):
     usr = User.objects.get(id=usr_id)
     tsobj = data_convert(src)
@@ -162,7 +156,6 @@ def data_move(src, dst):
         return
 
 
-@celery.task
 def import_file(src, filename, dst, usr_id):
     usr = User.objects.get(id=usr_id)
     logger.debug("[x] Importing %r to DB" % filename)
@@ -191,7 +184,6 @@ def import_file(src, filename, dst, usr_id):
         data_delete(1, src + filename)
 
 
-@celery.task(ignore_result=True)
 def import_geotiff(src, filename, dst, usr_id):
     usr = User.objects.get(id=usr_id)
     src = src + filename
@@ -225,8 +217,8 @@ def import_geotiff(src, filename, dst, usr_id):
         store_dstf = store_dst + filename
 
         hao = call(['java', '-jar',
-            pd['geoserver_jar_pusher'],\
-            src, pd['geoserver_url']])
+            gs_setting['geoserver_jar_pusher'],\
+            src, gs_setting['geoserver_url']])
         if hao == 0:
             logger.debug("[x] Published %r to GeoServer " % src)
             ts.set_event(timestamp[0], values)
@@ -297,3 +289,53 @@ def import_lmw(src, fileName):
     st = write2_cassandra(tsOBJ, src)
 
     data_delete(st, src)
+
+
+@celery.task
+def new_file_detected(pathDir, fileName):
+    src = pathDir + fileName
+    print src
+    fileDirName, fileExtension = os.path.splitext(src)
+    fileExtension = string.lower(fileExtension)
+
+    usr = get_usr_by_folder(pathDir)
+
+    if usr == 0:
+        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
+        return
+    else:
+        logger.info('[x] start importing: %r' % src)
+        logger.info('By User: %r' % usr.username)
+
+    if fileExtension == ".filepart":
+        fileName = fileName.replace(".filepart", "")
+        src = pathDir + fileName
+        fileDirName, fileExtension = os.path.splitext(src)
+    if fileExtension == ".csv":
+        import_csv(src, usr.id)
+    elif (fileExtension == ".png") or \
+    (fileExtension == ".jpg") or \
+    fileExtension == ".jpeg":
+        dst = pd['storage_base_path'] + pd['image']
+        import_file(pathDir, fileName, dst, usr.id)
+    elif fileExtension == ".avi" or \
+    fileExtension == ".wmv":
+        dst = pd['storage_base_path'] + pd['video']
+        import_file(pathDir, fileName, dst, usr.id)
+    elif fileExtension == ".pdf":
+        dst = pd['storage_base_path'] + pd['pdf']
+        import_file(pathDir, fileName, dst, usr.id)
+    elif (fileExtension == ".tif" or \
+    fileExtension == ".tiff"):
+        dst = pd['storage_base_path'] + pd['geotiff']
+        import_geotiff(pathDir, fileName, dst, usr.id)
+    else:
+        file_ignored.delay(src, fileExtension)
+
+
+def file_ignored(src, fileExtension):
+    logger.info('''[x]--Warning-- * %r
+    FILE: %r is not acceptable'''
+    % (fileExtension, src))
+    dst = pd['storage_base_path'] + pd['unrecognized']
+    data_move(src, dst)

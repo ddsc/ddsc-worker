@@ -13,10 +13,10 @@ from django.conf import settings
 
 import pandas
 
-LOGGING_PATH = getattr(settings, 'LOGGING_DST')
+pd = getattr(settings, 'IMPORTER_PATH')
 
 logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler(LOGGING_PATH['ddsc_logging'])
+hdlr = logging.FileHandler(pd['ddsc_logging'])
 formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
@@ -76,8 +76,8 @@ def get_timeseries_by_remoteid(usr, remoteid):
         return ts
     except IdMapping.DoesNotExist:
         logger.debug(
-            'No such timeseries remoteID : %r---%r in database or it is already an internal id'
-             % (usr.username, remoteid)
+            'No such timeseries remoteID : %r--' % usr.username + \
+            '%r in database or it is already an internal id' % remoteid
         )
         try:
             ts = Timeseries.objects.get(uuid=remoteid)
