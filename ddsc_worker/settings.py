@@ -134,7 +134,7 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'lizard_security.backends.PermissionBackend',
+    'lizard_security.backends.DDSCPermissionBackend',
 )
 
 INSTALLED_APPS = (
