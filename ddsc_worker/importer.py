@@ -1,26 +1,24 @@
 from __future__ import absolute_import
-from celery.signals import after_setup_task_logger
-from ddsc_worker.logging.handlers import DDSCHandler
-import logging
-
-from ddsc_worker.celery import celery
-
-from pandas.io.parsers import read_csv
 
 from os import remove
+from subprocess import call
+import logging
 import os
 import shutil
 import string
-from subprocess import call
 
-from ddsc_worker.import_auth import get_timestamp_by_filename
-from ddsc_worker.import_auth import get_remoteid_by_filename
-from ddsc_worker.import_auth import get_usr_by_folder
-from ddsc_worker.import_auth import get_usr_by_ip
-from ddsc_worker.import_auth import get_auth
-
+from celery.signals import after_setup_task_logger
 from django.conf import settings
 from django.contrib.auth.models import User
+from pandas.io.parsers import read_csv
+
+from ddsc_worker.celery import celery
+from ddsc_worker.import_auth import get_auth
+from ddsc_worker.import_auth import get_remoteid_by_filename
+from ddsc_worker.import_auth import get_timestamp_by_filename
+from ddsc_worker.import_auth import get_usr_by_folder
+from ddsc_worker.import_auth import get_usr_by_ip
+from ddsc_worker.logging.handlers import DDSCHandler
 
 
 pd = getattr(settings, 'IMPORTER_PATH')

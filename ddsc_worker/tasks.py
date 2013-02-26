@@ -1,15 +1,18 @@
 from __future__ import absolute_import
-from celery.signals import after_setup_task_logger
-from celery.utils.log import get_task_logger
-from ddsc_core.models import Timeseries
-from ddsc_worker.celery import celery
-from ddsc_worker.logging.handlers import DDSCHandler
-from tslib.readers import PiXmlReader
+
 import gzip
 import logging
 import os
 import shutil
 import time
+
+from celery.signals import after_setup_task_logger
+from celery.utils.log import get_task_logger
+
+from ddsc_core.models import Timeseries
+from ddsc_logging.handlers import DDSCHandler
+from ddsc_worker.celery import celery
+from tslib.readers import PiXmlReader
 
 
 @after_setup_task_logger.connect

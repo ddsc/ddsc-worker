@@ -12,6 +12,7 @@ install_requires = [
     'Django',
     'celery >= 3.0.12',
     'ddsc-core',
+    'ddsc-logging',
     'django-extensions',
     'django-nose',
     'lizard-ui',
