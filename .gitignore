@@ -37,4 +37,4 @@ src
 etc/*.nginx.conf
 etc/*.logrotate
 ddsc_worker/local*settings.py
-ddsc_worker/celeryconfig.production.py
+ddsc_worker/celeryconfig.py
