@@ -1,36 +1,23 @@
 from __future__ import absolute_import
 
-from os import remove
 from subprocess import call
 import logging
 import os
 import shutil
-import string
 
-from celery.signals import after_setup_task_logger
 from django.conf import settings
 from django.contrib.auth.models import User
 from pandas.io.parsers import read_csv
 
-from ddsc_worker.celery import celery
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
 from ddsc_worker.import_auth import get_timestamp_by_filename
-from ddsc_worker.import_auth import get_usr_by_folder
-from ddsc_worker.import_auth import get_usr_by_ip
-from ddsc_worker.logging.handlers import DDSCHandler
 
+logger = logging.getLogger(__name__)
 
 pd = getattr(settings, 'IMPORTER_PATH')
 ERROR_file = pd['storage_base_path'] + pd['rejected_file']
 gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
-logger = logging.getLogger(__name__)
-
-hdlr = logging.FileHandler(pd['ddsc_logging'])
-formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
 
 
 def data_convert(src):
@@ -104,7 +91,7 @@ def write2_cassandra(tsOBJ_yes, ts, src):
 
 def data_delete(wStatus, src):
     if wStatus == 1:
-        remove(src)
+        os.remove(src)
         if 1 == 2:
             logger.error('something went wrong')
             pass
@@ -125,13 +112,13 @@ def import_csv(src, usr_id):
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
         ts = get_auth(usr, remoteid)  # user object and remote id
-        if ts == False:
+        if ts is False:
             success = False
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
             st = write2_cassandra(tsobjYes, ts, src)
 
-    if success == False:
+    if success is False:
         logger.error('[x] File:--%r-- has been rejected' % src)
         data_move(src, ERROR_file)
     else:
@@ -216,7 +203,7 @@ def import_geotiff(src, filename, dst, usr_id):
         store_dstf = store_dst + filename
 
         hao = call(['java', '-jar',
-            gs_setting['geoserver_jar_pusher'],\
+            gs_setting['geoserver_jar_pusher'],
             src, gs_setting['geoserver_url']])
         if hao == 0:
             logger.debug("[x] Published %r to GeoServer " % src)
@@ -232,118 +219,6 @@ def import_geotiff(src, filename, dst, usr_id):
     else:
         logger.error('[x] File:--%r-- has been rejected', src)
         data_move(src, ERROR_file)
-
-
-@celery.task
-def import_lmw(src, fileName):
-    date_spec = {"timedate": [0, 1]}
-    tsOBJ = read_csv(src,
-                     skiprows=6, parse_dates=date_spec,
-                     sep=";", index_col=0, header=None)
-
-    tsOBJ = tsOBJ.rename(
-        columns={2: 'location', 3: 'met', 4: 'q_flag', 5: 'value'}
-    )
-
-    f = open(src, 'r')
-
-    str = f.readline()
-    strlist = str.split('=')
-    data_bank = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    location = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    waarnemingsgroepcode = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    x_cord = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    y_cord = strlist[1].replace("\r\n", '')
-
-    i = 0
-    tsOBJ['flag'] = 'None'
-    for row in tsOBJ.iterrows():
-            if tsOBJ.q_flag[i] in [10, 30, 50, 70]:
-                tsOBJ['flag'][i] = '0'
-                i += 1
-            elif tsOBJ.q_flag[i] in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
-                tsOBJ['flag'][i] = '3'
-                i += 1
-            else:
-                tsOBJ['flag'][i] = '6'
-                i += 1
-    logger.info("[x] %r _validated" % (src))
-    tsOBJ = tsOBJ.tz_localize('UTC')
-    del tsOBJ['location']
-    del tsOBJ['met']
-    del tsOBJ['q_flag']
-
-    st = write2_cassandra(tsOBJ, src)
-
-    data_delete(st, src)
-
-
-@celery.task
-def new_file_detected(pathDir, fileName):
-    src = pathDir + fileName
-    print src
-    fileDirName, fileExtension = os.path.splitext(src)
-    fileExtension = string.lower(fileExtension)
-
-    usr = get_usr_by_folder(pathDir)
-
-    if usr == 0:
-        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
-        return
-    else:
-        logger.info('[x] start importing: %r' % src)
-        logger.info('By User: %r' % usr.username)
-
-    if fileExtension == ".filepart":
-        fileName = fileName.replace(".filepart", "")
-        src = pathDir + fileName
-        fileDirName, fileExtension = os.path.splitext(src)
-    if fileExtension == ".csv":
-        import_csv(src, usr.id)
-    elif (fileExtension == ".png") or \
-    (fileExtension == ".jpg") or \
-    fileExtension == ".jpeg":
-        dst = pd['storage_base_path'] + pd['image']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif fileExtension == ".avi" or \
-    fileExtension == ".wmv":
-        dst = pd['storage_base_path'] + pd['video']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif fileExtension == ".pdf":
-        dst = pd['storage_base_path'] + pd['pdf']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif (fileExtension == ".tif" or \
-    fileExtension == ".tiff"):
-        dst = pd['storage_base_path'] + pd['geotiff']
-        import_geotiff(pathDir, fileName, dst, usr.id)
-    else:
-        file_ignored.delay(src, fileExtension)
-
-
-@celery.task
-def new_socket_detected(pathDir, fileName):
-    src = pathDir + fileName
-    usr = get_usr_by_ip(fileName)
-
-    if usr is False:
-        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
-        return
-
-    logger.info('[x] start importing: %r' % src)
-    logger.info('By User: %r' % usr.username)
-    import_csv(src, usr.id)
 
 
 def file_ignored(src, fileExtension):

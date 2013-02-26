@@ -1,12 +1,6 @@
-from lizard_ui.settingshelper import setup_logging
-
-from ddsc_worker.settings import *
+from ddsc_worker.settings import *  # NOQA
 
 DEBUG = True
-
-# By default, var/log/django.log gets WARN level logging, the console gets
-# DEBUG level logging.
-LOGGING = setup_logging(BUILDOUT_DIR)
 
 # ENGINE: 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
 # In case of geodatabase, prepend with:
@@ -32,7 +26,7 @@ DATABASES = {
 
 
 try:
-    from ddsc_worker.localsettings import *
     # For local dev overrides.
+    from ddsc_worker.localsettings import *  # NOQA
 except ImportError:
     pass

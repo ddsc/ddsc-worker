@@ -1,26 +1,22 @@
 """
 the authorization for ddsc worker
 """
+
 from __future__ import absolute_import
 
 import logging
 
-from ddsc_core.models.models import Timeseries, IdMapping
-from ddsc_core.models.system import IPAddress, Folder
-from ddsc_core.auth import PERMISSION_CHANGE
 from django.contrib.auth.models import User
-from django.conf import settings
-
 import pandas
 
-pd = getattr(settings, 'IMPORTER_PATH')
+from ddsc_core.auth import PERMISSION_CHANGE
+from ddsc_core.models.models import IdMapping
+from ddsc_core.models.models import Timeseries
+from ddsc_core.models.system import Folder
+from ddsc_core.models.system import IPAddress
+
 
 logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler(pd['ddsc_logging'])
-formatter = logging.Formatter("[%(asctime)s: %(levelname)s/] %(message)s")
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
 
 
 def get_auth(usr, remote_id):
@@ -76,7 +72,7 @@ def get_timeseries_by_remoteid(usr, remoteid):
         return ts
     except IdMapping.DoesNotExist:
         logger.debug(
-            'No such timeseries remoteID : %r--' % usr.username + \
+            'No such timeseries remoteID : %r--' % usr.username +
             '%r in database or it is already an internal id' % remoteid
         )
         try:

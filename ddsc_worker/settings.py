@@ -7,12 +7,15 @@
 # ever put personal settings into this file or into developmentsettings.py!
 
 import os
-import tempfile
 
-from lizard_ui.settingshelper import setup_logging
-from lizard_ui.settingshelper import STATICFILES_FINDERS
-
-STATICFILES_FINDERS = STATICFILES_FINDERS
+STATICFILES_FINDERS = (
+    'staticfiles.finders.FileSystemFinder',
+    'staticfiles.finders.AppDirectoriesFinder',
+    # Enable 'old' /media directories in addition to /static.
+    'staticfiles.finders.LegacyAppDirectoriesFinder',
+    # Enable support for django-compressor.
+    'compressor.finders.CompressorFinder',
+)
 
 # Set matplotlib defaults.
 # Uncomment this when using lizard-map.
@@ -30,15 +33,6 @@ SETTINGS_DIR = os.path.dirname(os.path.realpath(__file__))
 # to place all collected static files.
 BUILDOUT_DIR = os.path.abspath(os.path.join(SETTINGS_DIR, '..'))
 
-# Set up logging. No console logging. By default, var/log/django.log and
-# sentry at 'WARN' level.
-LOGGING = setup_logging(BUILDOUT_DIR, console_level=None, sentry_level='WARN')
-
-# Triple blast.  Needed to get matplotlib from barfing on the server: it needs
-# to be able to write to some directory.
-if 'MPLCONFIGDIR' not in os.environ:
-    os.environ['MPLCONFIGDIR'] = tempfile.gettempdir()
-
 # Production, so DEBUG is False. developmentsettings.py sets it to True.
 DEBUG = False
 # Show template debug information for faulty templates.  Only used when DEBUG
@@ -53,7 +47,8 @@ MANAGERS = ADMINS
 
 # TODO: Switch this to the real production database.
 # ^^^ 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-# In case of geodatabase, prepend with: django.contrib.gis.db.backends.(postgis)
+# In case of geodatabase, prepend with:
+# django.contrib.gis.db.backends.(postgis)
 DATABASES = {
     'default': {
         'NAME': '',      # via localproductionsettings!
@@ -138,8 +133,18 @@ AUTHENTICATION_BACKENDS = (
 )
 
 INSTALLED_APPS = (
-    'lizard_security',
-    'lizard_ui',  # after lizard-security
+    # Default apps
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    #
+    'django.contrib.admin',
+    #
+#   'lizard_security',
+#   'lizard_ui',  # after lizard-security
     'ddsc_worker',
     'ddsc_core',  # after lizard-security
     'south',
@@ -147,13 +152,9 @@ INSTALLED_APPS = (
     'staticfiles',
     'raven.contrib.django',
     'django_extensions',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
+    #
     'django.contrib.gis',
     'django.contrib.markup',
-    'django.contrib.sessions',
-    'django.contrib.sites',
 )
 
 # TODO: Put your real url here to configure Sentry.
@@ -162,9 +163,8 @@ SENTRY_DSN = 'http://some:thing@sentry.lizardsystem.nl/1'
 # TODO: add gauges ID here. Generate one separately for the staging, too.
 UI_GAUGES_SITE_ID = ''  # Staging has a separate one.
 
-
 try:
+    # For local production overrides (DB passwords, for instance):
     from ddsc_worker.localproductionsettings import *  # NOQA
-    # For local production overrides (DB passwords, for instance)
 except ImportError:
     pass
