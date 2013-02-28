@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import gzip
+import logging
 import os
 import shutil
 import string
@@ -18,18 +19,27 @@ from ddsc_worker.import_auth import get_usr_by_folder
 from ddsc_worker.import_auth import get_usr_by_ip
 from tslib.readers import PiXmlReader
 
-from ddsc_worker.importer import write2_cassandra
-from ddsc_worker.importer import import_csv
-from ddsc_worker.importer import import_geotiff
-from ddsc_worker.importer import import_file
-from ddsc_worker.importer import file_ignored
 from ddsc_worker.importer import data_delete
 from ddsc_worker.importer import data_move
+from ddsc_worker.importer import file_ignored
+from ddsc_worker.importer import import_csv
+from ddsc_worker.importer import import_file
+from ddsc_worker.importer import import_geotiff
+from ddsc_worker.importer import write2_cassandra
 
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
+    """Log records in the ddsc_worker package to RabbitMQ.
+
+    The logging level is inherited from the root logger (and will be `WARNING`
+    if you accept the default when running Celery as a daemon).
+
+    Records will be logged to a topic exchange (ddsc.log).
+
+    """
     handler = DDSCHandler(celery.conf['BROKER_URL'])
+    logger = logging.getLogger('ddsc_worker')
     logger.addHandler(handler)
 
 
