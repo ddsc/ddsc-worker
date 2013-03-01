@@ -43,4 +43,8 @@ IMPORTER_GEOSERVER = {
         '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/geotif_pub.jar',
     'geoserver_url':
         'http://10.10.101.118:8080/geoserver',
+    'geoserver_username':
+        'admin',
+    'geoserver_password':
+        'geoserver',
 }
