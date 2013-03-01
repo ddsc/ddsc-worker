@@ -27,6 +27,8 @@ from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
 from ddsc_worker.importer import write2_cassandra
 
+pd = getattr(settings, 'IMPORTER_PATH')
+
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
@@ -92,11 +94,6 @@ def compress(src):
     os.remove(src)
     return dst
 
-#
-
-pd = getattr(settings, 'IMPORTER_PATH')
-ERROR_file = pd['storage_base_path'] + pd['rejected_file']
-gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 
 # The lmw importing task implementation yet to be decided
 #@celery.task
