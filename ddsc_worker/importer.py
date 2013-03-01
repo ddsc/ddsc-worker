@@ -204,7 +204,10 @@ def import_geotiff(src, filename, dst, usr_id):
 
         hao = call(['java', '-jar',
             gs_setting['geoserver_jar_pusher'],
-            src, gs_setting['geoserver_url']])
+            src, gs_setting['geoserver_url'],
+            gs_setting['geoserver_username'],
+            gs_setting['geoserver_password']])
+
         if hao == 0:
             logger.debug("[x] Published %r to GeoServer " % src)
             ts.set_event(timestamp[0], values)
