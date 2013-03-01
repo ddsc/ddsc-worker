@@ -98,61 +98,61 @@ pd = getattr(settings, 'IMPORTER_PATH')
 ERROR_file = pd['storage_base_path'] + pd['rejected_file']
 gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 
-
-@celery.task
-def import_lmw(src, fileName):
-    date_spec = {"timedate": [0, 1]}
-    tsOBJ = read_csv(src,
-                     skiprows=6, parse_dates=date_spec,
-                     sep=";", index_col=0, header=None)
-
-    tsOBJ = tsOBJ.rename(
-        columns={2: 'location', 3: 'met', 4: 'q_flag', 5: 'value'}
-    )
-
-    f = open(src, 'r')
-
-    str = f.readline()
-    strlist = str.split('=')
-    data_bank = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    location = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    waarnemingsgroepcode = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    x_cord = strlist[1].replace("\r\n", '')
-
-    str = f.readline()
-    strlist = str.split('=')
-    y_cord = strlist[1].replace("\r\n", '')
-
-    i = 0
-    tsOBJ['flag'] = 'None'
-    for row in tsOBJ.iterrows():
-            if tsOBJ.q_flag[i] in [10, 30, 50, 70]:
-                tsOBJ['flag'][i] = '0'
-                i += 1
-            elif tsOBJ.q_flag[i] in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
-                tsOBJ['flag'][i] = '3'
-                i += 1
-            else:
-                tsOBJ['flag'][i] = '6'
-                i += 1
-    logger.info("[x] %r _validated" % (src))
-    tsOBJ = tsOBJ.tz_localize('UTC')
-    del tsOBJ['location']
-    del tsOBJ['met']
-    del tsOBJ['q_flag']
-
-    st = write2_cassandra(tsOBJ, src)
-
-    data_delete(st, src)
+# The lmw importing task implementation yet to be decided
+#@celery.task
+#def import_lmw(src, fileName):
+#    date_spec = {"timedate": [0, 1]}
+#    tsOBJ = read_csv(src,
+#                     skiprows=6, parse_dates=date_spec,
+#                     sep=";", index_col=0, header=None)
+#
+#    tsOBJ = tsOBJ.rename(
+#        columns={2: 'location', 3: 'met', 4: 'q_flag', 5: 'value'}
+#    )
+#
+#    f = open(src, 'r')
+#
+#    str = f.readline()
+#    strlist = str.split('=')
+#    data_bank = strlist[1].replace("\r\n", '')
+#
+#    str = f.readline()
+#    strlist = str.split('=')
+#    location = strlist[1].replace("\r\n", '')
+#
+#    str = f.readline()
+#    strlist = str.split('=')
+#    waarnemingsgroepcode = strlist[1].replace("\r\n", '')
+#
+#    str = f.readline()
+#    strlist = str.split('=')
+#    x_cord = strlist[1].replace("\r\n", '')
+#
+#    str = f.readline()
+#    strlist = str.split('=')
+#    y_cord = strlist[1].replace("\r\n", '')
+#
+#    i = 0
+#    tsOBJ['flag'] = 'None'
+#    for row in tsOBJ.iterrows():
+#            if tsOBJ.q_flag[i] in [10, 30, 50, 70]:
+#                tsOBJ['flag'][i] = '0'
+#                i += 1
+#            elif tsOBJ.q_flag[i] in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
+#                tsOBJ['flag'][i] = '3'
+#                i += 1
+#            else:
+#                tsOBJ['flag'][i] = '6'
+#                i += 1
+#    logger.info("[x] %r _validated" % (src))
+#    tsOBJ = tsOBJ.tz_localize('UTC')
+#    del tsOBJ['location']
+#    del tsOBJ['met']
+#    del tsOBJ['q_flag']
+#
+#    st = write2_cassandra(tsOBJ, src)
+#
+#    data_delete(st, src)
 
 
 @celery.task
