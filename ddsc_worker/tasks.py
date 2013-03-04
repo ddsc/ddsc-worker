@@ -201,6 +201,7 @@ def new_socket_detected(pathDir, fileName):
 
     if usr is False:
         data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
+        raise Exception("[x] %r _FAILED to be imported" % src)
         return
 
     logger.info('[x] start importing: %r' % src)

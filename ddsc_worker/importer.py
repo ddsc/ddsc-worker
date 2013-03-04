@@ -34,6 +34,7 @@ def data_convert(src):
     if status == 0:
         logger.debug("[x] %r _FAILED to be converted" % (src))
         data_move(src, ERROR_file)
+        raise Exception('CSV file: %r ERROR to convert!' % src)
         exit()
     else:
         tsOBJ['flag'] = 'None'
@@ -114,6 +115,7 @@ def import_csv(src, usr_id):
         ts = get_auth(usr, remoteid)  # user object and remote id
         if ts is False:
             success = False
+            raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
             st = write2_cassandra(tsobjYes, ts, src)
@@ -167,7 +169,8 @@ def import_file(src, filename, dst, usr_id):
             filename))
     else:
         logger.error('[x] File:--%r-- has been rejected' % (src + filename))
-        data_delete(1, src + filename)
+        data_move(src + filename, ERROR_file)
+        raise Exception("[x] %r _FAILED to be imported" % (src + filename))
 
 
 def import_geotiff(src, filename, dst, usr_id):
@@ -217,16 +220,18 @@ def import_geotiff(src, filename, dst, usr_id):
                 "[x] File:--%r-- has been successfully imported" % src)
         else:
             logger.debug("[x] Publishing error")
-            logger.error('[x] File:--%r-- has been rejected', src)
+            logger.error('[x] File:--%r-- has been rejected' % src)
             data_move(src, ERROR_file)
+            raise Exception("[x] %r _FAILED to be imported" % src)
     else:
-        logger.error('[x] File:--%r-- has been rejected', src)
+        logger.error('[x] File:--%r-- has been rejected' % src)
         data_move(src, ERROR_file)
+        raise Exception("[x] %r _FAILED to be imported" % src)
 
 
 def file_ignored(src, fileExtension):
-    logger.info('''[x]--Warning-- * %r
-    FILE: %r is not acceptable'''
-    % (fileExtension, src))
+    logger.info('[x]--Warning-- * %r' % fileExtension + \
+        ' FILE: %r is not acceptable' % src)
     dst = pd['storage_base_path'] + pd['unrecognized']
     data_move(src, dst)
+    raise Exception("[x] %r _FAILED to be imported" % src)
