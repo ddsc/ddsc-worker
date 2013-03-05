@@ -142,7 +142,7 @@ INSTALLED_APPS = (
     #
     'django.contrib.admin',
     #
-#   'lizard_security',
+    'lizard_security',
 #   'lizard_ui',  # after lizard-security
     'ddsc_worker',
     'ddsc_core',  # after lizard-security
