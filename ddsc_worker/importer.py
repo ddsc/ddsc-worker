@@ -24,15 +24,17 @@ def data_convert(src):
 #    pydevd.settrace()
     try:
         logger.debug("[x] converting %r to pandas object" % (src))
-        tsOBJ = read_csv(src, index_col=0,
-        parse_dates=True,
-        names=['SensorID', 'value'])
+        tsOBJ = read_csv(
+            src, index_col=0,
+            parse_dates=True,
+            names=['SensorID', 'value'],
+        )
         status = 1
     except:
         logger.error('CSV file: %r ERROR to convert!' % src)
         status = 0
     if status == 0:
-        logger.debug("[x] %r _FAILED to be converted" % (src))
+        logger.error("[x] %r _FAILED to be converted" % (src))
         data_move(src, ERROR_file)
         raise Exception('CSV file: %r ERROR to convert!' % src)
         exit()
@@ -84,10 +86,10 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         wStatus = 1
         logger.debug("[x] %r _written" % (src))
     except:
-        logger.debug("[x] %r _FAILED to write to cassandra" % (src))
+        logger.error("[x] %r _FAILED to be written to cassandra" % (src))
         data_move(src, ERROR_file)
-        wStatus = 0
-    return wStatus
+        raise Exception('CSV file: %r ERROR to convert!' % src)
+        exit()
 
 
 def data_delete(wStatus, src):
@@ -115,17 +117,17 @@ def import_csv(src, usr_id):
         ts = get_auth(usr, remoteid)  # user object and remote id
         if ts is False:
             success = False
+            data_move(src, ERROR_file)
+            logger.error(
+                '[x] File:--%r-- has been rejected because of authorization' %
+                src)
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
             st = write2_cassandra(tsobjYes, ts, src)
 
-    if success is False:
-        logger.error('[x] File:--%r-- has been rejected' % src)
-        data_move(src, ERROR_file)
-    else:
-        data_delete(st, src)
-        logger.info('[x] File:--%r-- has been successfully imported' % src)
+    data_delete(st, src)
+    logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
 def data_move(src, dst):
