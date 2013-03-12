@@ -10,22 +10,22 @@ import time
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 from django.conf import settings
-from pandas.io.parsers import read_csv
+#from pandas.io.parsers import read_csv
 
 from ddsc_core.models import Timeseries
 from ddsc_logging.handlers import DDSCHandler
+from tslib.readers import PiXmlReader
+
 from ddsc_worker.celery import celery
 from ddsc_worker.import_auth import get_usr_by_folder
 from ddsc_worker.import_auth import get_usr_by_ip
-from tslib.readers import PiXmlReader
-
-from ddsc_worker.importer import data_delete
+#from ddsc_worker.importer import data_delete
 from ddsc_worker.importer import data_move
 from ddsc_worker.importer import file_ignored
 from ddsc_worker.importer import import_csv
 from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
-from ddsc_worker.importer import write2_cassandra
+#from ddsc_worker.importer import write2_cassandra
 
 pd = getattr(settings, 'IMPORTER_PATH')
 
