@@ -155,7 +155,6 @@ def compress(src):
 @celery.task
 def new_file_detected(pathDir, fileName):
     src = pathDir + fileName
-    print src
     fileDirName, fileExtension = os.path.splitext(src)
     fileExtension = string.lower(fileExtension)
 
