@@ -1,9 +1,7 @@
 from __future__ import absolute_import
 
-import gzip
 import logging
 import os
-import shutil
 import string
 import time
 
@@ -55,13 +53,6 @@ def add(x, y):
     return x + y
 
 
-@celery.task
-def mul(x, y):
-    logger.info("Multiplying %r * %r" % (x, y))
-    time.sleep(3)
-    return x * y
-
-
 @celery.task(ignore_result=True)
 def import_pi_xml(src):
     logger.info("Importing %r" % src)
@@ -72,27 +63,6 @@ def import_pi_xml(src):
         ts.set_events(df)
         ts.save()
     return src
-
-
-@celery.task(ignore_result=True)
-def move(src, dst):
-    logger.info("Moving %r to %r" % (src, dst))
-    shutil.move(src, dst)
-    if os.path.isdir(dst):
-        return os.path.join(dst, os.path.split(src)[1])
-    else:
-        return dst
-
-
-@celery.task(ignore_result=True)
-def compress(src):
-    logger.info("Gzipping %r" % src)
-    dst = src + ".gz"
-    with open(src, "rb") as f_in:
-        with gzip.open(dst, "wb") as f_out:
-            f_out.writelines(f_in)
-    os.remove(src)
-    return dst
 
 
 # The lmw importing task implementation yet to be decided
