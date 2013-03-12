@@ -8,6 +8,7 @@ import time
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 from django.conf import settings
+from django.core import management
 #from pandas.io.parsers import read_csv
 
 from ddsc_core.models import Timeseries
@@ -63,6 +64,12 @@ def import_pi_xml(src):
         ts.set_events(df)
         ts.save()
     return src
+
+
+@celery.task(ignore_result=True)
+def export_pi_xml(src, dst):
+    logger.info("Exporting %r" % src)
+    management.call_command("export_pi_xml", src, file=dst)
 
 
 # The lmw importing task implementation yet to be decided
