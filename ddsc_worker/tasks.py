@@ -68,7 +68,18 @@ def import_pi_xml(src):
 
 @celery.task(ignore_result=True)
 def export_pi_xml(src, dst):
-    logger.info("Exporting %r" % src)
+    """Create a pi.xml file based on a template.
+
+    A template is a valid pi.xml file in which each series has a `comment`
+    element containing a uuid of a ddsc timeseries. A template generally
+    contains no events (they will be ignored anyway).
+
+    Keyword arguments:
+    src -- path to a template pi.xml
+    dst -- path to the resulting pi.xml
+
+    """
+    logger.info("Exporting %r to %r" % (src, dst))
     management.call_command("export_pi_xml", src, file=dst)
 
 
