@@ -5,13 +5,36 @@ from datetime import datetime
 from ddsc_core.models import Timeseries
 from ddsc_core.models.alarms import Alarm
 from ddsc_core.models.alarms import Alarm_Item
+from ddsc_core.models.alarms import Alarm_Active
 from django.utils import timezone
 import smtplib
 
+import logging
+from ddsc_worker.celery import celery
+from ddsc_logging.handlers import DDSCHandler
+from celery.utils.log import get_task_logger
 
 SMTP_HOST = '10.10.101.21'  # To be decided where to put in the settings file
 SMTP_PORT = 25
 FROM_ADDRESS = 'no_reply@dijkdata.nl'
+
+
+#@after_setup_task_logger.connect
+def setup_ddsc_task_logger(**kwargs):
+    """Log records in the ddsc_worker package to RabbitMQ.
+
+    The logging level is inherited from the root logger (and will be `WARNING`
+    if you accept the default when running Celery as a daemon).
+
+    Records will be logged to a topic exchange (ddsc.log).
+
+    """
+    handler = DDSCHandler(celery.conf['BROKER_URL'])
+    logger = logging.getLogger('ddsc_alarm')
+    logger.addHandler(handler)
+
+
+logger = get_task_logger(__name__)
 
 
 def compare(x, y, z):
@@ -36,6 +59,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for alm in Alarm.objects.filter(active_status=True):
+            try:
+                alm_act_list = Alarm_Active.objects.filter(alarm_id=alm.id)
+                ll = len(alm_act_list)
+                alm_act = alm_act_list[ll - 1]
+            except:
+                logger.info('no alarm active objects in current alarm')
+                alm_act = Alarm_Active.objects.create(
+                    alarm_id=alm.id,
+                    first_triggered_on=timezone.now(),
+                    message='none',
+                    active=True,
+                )
             final_decision = False
             list_ts_info = ''
             current_time = timezone.now()
@@ -45,9 +80,9 @@ class Command(BaseCommand):
                 time_diff.microseconds / 1000000
             alarm_or_not = []
             if (alm != [] and time_diff_sec > alm.frequency * 60):
-                print 'executing, alarm name: %r' % alm.name
+                logger.info('executing, alarm name: %r' % alm.name)
                 logical_check = alm.logical_check
-                print 'logical_check: %r' % logical_check
+                logger.debug('logical_check: %r' % logical_check)
                 for alm_itm in Alarm_Item.objects.filter(alarm_id=alm.id):
                     if alm_itm != []:
                         try:
@@ -57,17 +92,18 @@ class Command(BaseCommand):
                         logical_check_item = alm_itm.logical_check
                         alarm_or_not_item = []
                         for ts in ts_series:
-                            print 'ts_lastest timestamp:'
-                            print ts.latest_value_timestamp
-                            print 'alarm_last_checked timestamp:'
-                            print alm.last_checked
+                            logger.debug('ts_lastest timestamp: %r'
+                                % ts.latest_value_timestamp)
+                            logger.debug('alarm_last_checked timestamp: %r'
+                                % alm.last_checked)
                             if ts.latest_value_timestamp > (alm.last_checked):
-                                print 'checking timeseries: %r' % ts.uuid \
-                                    + 'within alarm item id %r' % alm_itm.id
-                                print 'comparison type is:' \
-                                    + '%r' % alm_itm.comparision
-                                print 'comparison value type is: ' \
-                                    + '%r' % alm_itm.value_type
+                                logger.debug('checking timeseries: %r' % \
+                                    ts.uuid + 'within alarm item id %r' % \
+                                    alm_itm.id)
+                                logger.debug('comparison type is:' \
+                                    + '%r' % alm_itm.comparision)
+                                logger.debug('comparison value type is: ' \
+                                    + '%r' % alm_itm.value_type)
                                 print 'comparison value is: ' \
                                     + '%r' % alm_itm.value_double
                                 print 'timeseries value is: ' \
@@ -100,7 +136,7 @@ class Command(BaseCommand):
                             + '%r' % ds
                         alarm_or_not.append(ds)
                 alm.last_checked = timezone.now()
-                alm.save()
+                super(Alarm, alm).save()
             else:
                 print 'current alarm has been checked!'
             if alarm_or_not != []:
@@ -108,8 +144,8 @@ class Command(BaseCommand):
                 print '-------------------------------------------------------'
                 print 'alarm or not (alarm level)? ...: %r' % alarm_or_not
                 final_decision = decision(alarm_or_not, logical_check)
-                print 'final alarm or not? \
-                    %r' % final_decision
+                print 'final alarm or not? ' +\
+                    '%r' % final_decision
                 if final_decision is True:
                     smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
                     from_addr = FROM_ADDRESS
@@ -138,7 +174,20 @@ class Command(BaseCommand):
                                 from_addr + '\n' + 'Subject: ALARM! \n'
                         msg = header + msg
                         smtp.sendmail(from_addr, to_addr, msg)
-#            alm.active_status = False
-#            alm.save()
+                    ### maintaining the alarm_active table ###
+                    if alm_act.active == False:
+                        alm_act = Alarm_Active.objects.create(
+                            alarm_id=alm.id,
+                            first_triggered_on=timezone.now(),
+                            message=msg,
+                        )
+                    else:
+                        alm_act.message = msg
+                        alm_act.save()
+                else:
+                    if alm_act.active is True:
+                            alm_act.active = False
+                            alm_act.deactivated_on = timezone.now()
+                            alm_act.save()
             print 'finishing alarm name: %r  \n\n' % alm.name
         print 'completed~'
