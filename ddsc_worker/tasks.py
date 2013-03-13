@@ -50,7 +50,7 @@ logger = get_task_logger(__name__)
 @celery.task
 def add(x, y):
     logger.debug("Adding %r + %r" % (x, y))
-    time.sleep(9)
+    time.sleep(20)
     return x + y
 
 
@@ -67,7 +67,7 @@ def import_pi_xml(src):
 
 
 @celery.task(ignore_result=True)
-def export_pi_xml(src, dst):
+def export_pi_xml(src, dst, **options):
     """Create a pi.xml file based on a template.
 
     A template is a valid pi.xml file in which each series has a `comment`
@@ -80,7 +80,7 @@ def export_pi_xml(src, dst):
 
     """
     logger.info("Exporting %r to %r" % (src, dst))
-    management.call_command("export_pi_xml", src, file=dst)
+    management.call_command("export_pi_xml", src, file=dst, **options)
 
 
 # The lmw importing task implementation yet to be decided
