@@ -8,6 +8,7 @@ import shutil
 from django.conf import settings
 from django.contrib.auth.models import User
 from pandas.io.parsers import read_csv
+from tslib.readers import PiXmlReader
 
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
@@ -83,7 +84,6 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         del tsOBJ_yes['SensorID']
         ts.set_events(tsOBJ_yes)
         ts.save()
-        wStatus = 1
         logger.debug("[x] %r _written" % (src))
     except:
         logger.error("[x] %r _FAILED to be written to cassandra" % (src))
@@ -111,12 +111,10 @@ def import_csv(src, usr_id):
     nr = len(tsgrouped)
     nr = str(nr)
     logger.debug('There are %r timeseries in file : %r' % (nr, src))
-    success = True
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
         ts = get_auth(usr, remoteid)  # user object and remote id
         if ts is False:
-            success = False
             data_move(src, ERROR_file)
             logger.error(
                 '[x] File:--%r-- has been rejected because of authorization' %
@@ -229,6 +227,47 @@ def import_geotiff(src, filename, dst, usr_id):
         logger.error('[x] File:--%r-- has been rejected' % src)
         data_move(src, ERROR_file)
         raise Exception("[x] %r _FAILED to be imported" % src)
+
+
+def import_pi_xml(src, usr_id):
+    logger.info("[x] Importing %r" % src)
+    reader = PiXmlReader(src)
+
+    usr = User.objects.get(id=usr_id)
+
+    for md, df in reader.get_series():
+        loc = md['header']['locationId']
+        para = md['header']['parameterId']
+        unit = md['header']['timeStep']['@unit']
+        try:
+            div = md['header']['timeStep']['@divider']
+        except:
+            div = ''
+        try:
+            mul = md['header']['timeStep']['@multiplier']
+        except:
+            mul = ''
+        code = loc + '::' + para + '::' + unit + '::' + div + '::' + mul
+        ts = get_auth(usr, code)
+        if ts is False:
+            data_move(src, ERROR_file)
+            logger.error(
+                '[x] File:--%r-- has been rejected because of authorization' %
+                src)
+            raise Exception("[x] %r _FAILED to be imported" % (src))
+        else:
+            try:
+                ts.set_events(df)
+                ts.save()
+                logger.debug("[x] %r _written" % (src))
+            except:
+                logger.error(
+                    "[x] %r _FAILED to be written to cassandra" % (src))
+                data_move(src, ERROR_file)
+                raise Exception('piXML file: %r ERROR to convert!' % src)
+
+    data_delete(1, src)
+    logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
 def file_ignored(src, fileExtension):

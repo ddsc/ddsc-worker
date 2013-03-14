@@ -9,21 +9,18 @@ from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core import management
-#from pandas.io.parsers import read_csv
 
-from ddsc_core.models import Timeseries
 from ddsc_logging.handlers import DDSCHandler
-from tslib.readers import PiXmlReader
 
 from ddsc_worker.celery import celery
 from ddsc_worker.import_auth import get_usr_by_folder
 from ddsc_worker.import_auth import get_usr_by_ip
-#from ddsc_worker.importer import data_delete
 from ddsc_worker.importer import data_move
 from ddsc_worker.importer import file_ignored
 from ddsc_worker.importer import import_csv
 from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
+from ddsc_worker.importer import import_pi_xml
 #from ddsc_worker.importer import write2_cassandra
 
 pd = getattr(settings, 'IMPORTER_PATH')
@@ -52,18 +49,6 @@ def add(x, y):
     logger.debug("Adding %r + %r" % (x, y))
     time.sleep(20)
     return x + y
-
-
-@celery.task(ignore_result=True)
-def import_pi_xml(src):
-    logger.info("Importing %r" % src)
-    reader = PiXmlReader(src)
-    for md, df in reader.get_series():
-        code = md['header']['parameterId']
-        ts, _ = Timeseries.objects.get_or_create(code=code)
-        ts.set_events(df)
-        ts.save()
-    return src
 
 
 @celery.task(acks_late=True, ignore_result=True)
@@ -177,8 +162,10 @@ def new_file_detected(pathDir, fileName):
     fileExtension == ".tiff"):
         dst = pd['storage_base_path'] + pd['geotiff']
         import_geotiff(pathDir, fileName, dst, usr.id)
+    elif (fileExtension == ".xml"):
+        import_pi_xml(src, usr.id)
     else:
-        file_ignored.delay(src, fileExtension)
+        file_ignored(src, fileExtension)
 
 
 @celery.task
