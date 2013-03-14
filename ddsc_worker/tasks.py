@@ -66,7 +66,7 @@ def import_pi_xml(src):
     return src
 
 
-@celery.task(ignore_result=True)
+@celery.task(acks_late=True, ignore_result=True)
 def export_pi_xml(src, dst, **options):
     """Create a pi.xml file based on a template.
 
