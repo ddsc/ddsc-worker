@@ -233,22 +233,16 @@ def import_pi_xml(src, usr_id):
     logger.info("[x] Importing %r" % src)
     reader = PiXmlReader(src)
 
-    usr = User.objects.get(id=usr_id)
+    usr = User.objects.get(pk=usr_id)
 
     for md, df in reader.get_series():
-        loc = md['header']['locationId']
-        para = md['header']['parameterId']
-        unit = md['header']['timeStep']['@unit']
-        try:
-            div = md['header']['timeStep']['@divider']
-        except:
-            div = ''
-        try:
-            mul = md['header']['timeStep']['@multiplier']
-        except:
-            mul = ''
-        code = loc + '::' + para + '::' + unit + '::' + div + '::' + mul
-        ts = get_auth(usr, code)
+        loc = md['header']['locationId']  # required
+        para = md['header']['parameterId']  # required
+        unit = md['header']['timeStep']['@unit']  # required
+        div = md['header']['timeStep'].get('@divider', '')  # optional
+        mul = md['header']['timeStep'].get('@multiplier', '')  # optional
+        remote_id = loc + '::' + para + '::' + unit + '::' + div + '::' + mul
+        ts = get_auth(usr, remote_id)
         if ts is False:
             data_move(src, ERROR_file)
             logger.error(
@@ -271,7 +265,7 @@ def import_pi_xml(src, usr_id):
 
 
 def file_ignored(src, fileExtension):
-    logger.info('[x]--Warning-- * %r' % fileExtension + \
+    logger.info('[x]--Warning-- * %r' % fileExtension +
         ' FILE: %r is not acceptable' % src)
     dst = pd['storage_base_path'] + pd['unrecognized']
     data_move(src, dst)
