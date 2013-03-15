@@ -58,7 +58,7 @@ def get_usr_by_folder(pathDir):
         logger.error("Path Name : %r does not exist in data base" % pathDir)
         return 0
     try:
-        usr = User.objects.get(id=folder.user_id)
+        usr = User.objects.get(pk=folder.user_id)
         return usr
     except User.DoesNotExist:
         logger.error("User does not exist in data base")

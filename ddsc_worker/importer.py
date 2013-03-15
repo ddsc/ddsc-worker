@@ -105,7 +105,7 @@ def data_delete(wStatus, src):
 
 
 def import_csv(src, usr_id):
-    usr = User.objects.get(id=usr_id)
+    usr = User.objects.get(pk=usr_id)
     tsobj = data_convert(src)
     tsgrouped = tsobj.groupby('SensorID')
     nr = len(tsgrouped)
@@ -145,7 +145,7 @@ def data_move(src, dst):
 
 
 def import_file(src, filename, dst, usr_id):
-    usr = User.objects.get(id=usr_id)
+    usr = User.objects.get(pk=usr_id)
     logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
@@ -174,7 +174,7 @@ def import_file(src, filename, dst, usr_id):
 
 
 def import_geotiff(src, filename, dst, usr_id):
-    usr = User.objects.get(id=usr_id)
+    usr = User.objects.get(pk=usr_id)
     src = src + filename
 
     logger.debug("[x] Importing %r to DB" % filename)
