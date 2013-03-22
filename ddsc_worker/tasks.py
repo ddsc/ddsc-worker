@@ -166,7 +166,7 @@ def DownloadLMW():
             with open(datFileName, 'w') as datFile:
                 datFile.write(datData.read())
 
-        with zipped.open("update.kwa", 'r') as datData:
+        with zipped.open("update.kwa", 'r') as kwaData:
             with open(datFileName, 'w') as kwaFile:
                 kwaFile.write(datData.read())
 

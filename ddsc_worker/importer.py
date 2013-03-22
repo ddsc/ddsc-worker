@@ -120,7 +120,7 @@ def import_csv(src, usr_id):
             data_move(src, ERROR_file)
             logger.error(
                 '[x] File:--%r-- has been rejected because of authorization' %
-                src)q
+                src)
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
@@ -277,7 +277,6 @@ def file_ignored(src, fileExtension):
 def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
     ## get the user which in this case should be LMW I guess
     usr = User.objects.get(username='lmw_ddsc')
-    print usr.username
     adm_src = admFileName
     dat_src = datFileName
     kwa_src = kwaFileName
