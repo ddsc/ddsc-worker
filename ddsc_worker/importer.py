@@ -368,16 +368,17 @@ def ReadLMW(admFile, datFile, kwaFile):
                 timestamp_series.append(TimeForValue)
                 remoteid_series.append(timeseriesId)
                 counter += 1
-            if value_flag in [10, 30, 50, 70]:
-                quality_series.append('0')
-            elif value_flag in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
-                quality_series.append('3')
-            else:
-                quality_series.append('6')
+                if value_flag in [10, 30, 50, 70]:
+                    quality_series.append('0')
+                elif value_flag in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
+                    quality_series.append('3')
+                else:
+                    quality_series.append('6')
 
-    tsobj = DataFrame([timestamp_series, remoteid_series,
+    tsobj = DataFrame([remoteid_series,
                        val_series, quality_series])
     tsobj = tsobj.transpose()
-    tsobj.columns = ['tstamp', 'SensorID', 'value', 'flag']
-    tsobj_indexed = tsobj.set_index(tsobj['tstamp'])
+    tsobj.columns = ['SensorID', 'value', 'flag']
+    tstamp = DataFrame(timestamp_series, columns=['ts'])
+    tsobj_indexed = tsobj.set_index(tstamp['ts'])
     return tsobj_indexed
