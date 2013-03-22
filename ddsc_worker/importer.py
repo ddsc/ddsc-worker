@@ -120,7 +120,7 @@ def import_csv(src, usr_id):
             data_move(src, ERROR_file)
             logger.error(
                 '[x] File:--%r-- has been rejected because of authorization' %
-                src)
+                src)q
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
@@ -274,13 +274,15 @@ def file_ignored(src, fileExtension):
     raise Exception("[x] %r _FAILED to be imported" % src)
 
 
-def import_lmw(DestinationPath, admFileName, datFileName):
+def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
     ## get the user which in this case should be LMW I guess
     usr = User.objects.get(username='lmw_ddsc')
     print usr.username
     adm_src = admFileName
     dat_src = datFileName
-    tsobj_indx = ReadLMW(adm_src, dat_src)
+    kwa_src = kwaFileName
+
+    tsobj_indx = ReadLMW(adm_src, dat_src, kwa_src)
     tsgrouped = tsobj_indx.groupby('SensorID')
     nr = len(tsgrouped)
     nr = str(nr)
@@ -291,6 +293,7 @@ def import_lmw(DestinationPath, admFileName, datFileName):
         if ts is False:
             data_move(adm_src, ERROR_file)
             data_move(dat_src, ERROR_file)
+            data_move(kwa_src, ERROR_file)
             logger.error(
                 '[x] File:--%r-- has been rejected because of authorization' %
                 adm_src)
@@ -301,6 +304,7 @@ def import_lmw(DestinationPath, admFileName, datFileName):
 
     data_delete(1, adm_src)
     data_delete(1, dat_src)
+    data_delete(1, kwa_src)
     logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
 
 
