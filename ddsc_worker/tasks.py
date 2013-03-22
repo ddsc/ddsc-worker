@@ -4,6 +4,10 @@ import logging
 import os
 import string
 import time
+from datetime import datetime
+import urllib2
+import zipfile
+import cStringIO
 
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
@@ -21,9 +25,14 @@ from ddsc_worker.importer import import_csv
 from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
 from ddsc_worker.importer import import_pi_xml
+from ddsc_worker.importer import import_lmw
 #from ddsc_worker.importer import write2_cassandra
 
 pd = getattr(settings, 'IMPORTER_PATH')
+DestinationPath = pd['lmw']
+
+lmw_url = getattr(settings, 'LMW_URL')
+LmwUrl = lmw_url['url']
 
 
 @after_setup_task_logger.connect
@@ -68,63 +77,6 @@ def export_pi_xml(src, dst, **options):
     management.call_command("export_pi_xml", src, file=dst, **options)
 
 
-# The lmw importing task implementation yet to be decided
-#@celery.task
-#def import_lmw(src, fileName):
-#    date_spec = {"timedate": [0, 1]}
-#    tsOBJ = read_csv(src,
-#                     skiprows=6, parse_dates=date_spec,
-#                     sep=";", index_col=0, header=None)
-#
-#    tsOBJ = tsOBJ.rename(
-#        columns={2: 'location', 3: 'met', 4: 'q_flag', 5: 'value'}
-#    )
-#
-#    f = open(src, 'r')
-#
-#    str = f.readline()
-#    strlist = str.split('=')
-#    data_bank = strlist[1].replace("\r\n", '')
-#
-#    str = f.readline()
-#    strlist = str.split('=')
-#    location = strlist[1].replace("\r\n", '')
-#
-#    str = f.readline()
-#    strlist = str.split('=')
-#    waarnemingsgroepcode = strlist[1].replace("\r\n", '')
-#
-#    str = f.readline()
-#    strlist = str.split('=')
-#    x_cord = strlist[1].replace("\r\n", '')
-#
-#    str = f.readline()
-#    strlist = str.split('=')
-#    y_cord = strlist[1].replace("\r\n", '')
-#
-#    i = 0
-#    tsOBJ['flag'] = 'None'
-#    for row in tsOBJ.iterrows():
-#            if tsOBJ.q_flag[i] in [10, 30, 50, 70]:
-#                tsOBJ['flag'][i] = '0'
-#                i += 1
-#            elif tsOBJ.q_flag[i] in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
-#                tsOBJ['flag'][i] = '3'
-#                i += 1
-#            else:
-#                tsOBJ['flag'][i] = '6'
-#                i += 1
-#    logger.info("[x] %r _validated" % (src))
-#    tsOBJ = tsOBJ.tz_localize('UTC')
-#    del tsOBJ['location']
-#    del tsOBJ['met']
-#    del tsOBJ['q_flag']
-#
-#    st = write2_cassandra(tsOBJ, src)
-#
-#    data_delete(st, src)
-
-
 @celery.task
 def new_file_detected(pathDir, fileName):
     src = pathDir + fileName
@@ -146,8 +98,8 @@ def new_file_detected(pathDir, fileName):
         fileDirName, fileExtension = os.path.splitext(src)
     if fileExtension == ".csv":
         import_csv(src, usr.id)
-    elif (fileExtension == ".png") or \
-    (fileExtension == ".jpg") or \
+    elif (fileExtension == ".png") or\
+    (fileExtension == ".jpg") or\
     fileExtension == ".jpeg":
         dst = pd['storage_base_path'] + pd['image']
         import_file(pathDir, fileName, dst, usr.id)
@@ -181,3 +133,52 @@ def new_socket_detected(pathDir, fileName):
     logger.info('[x] start importing: %r' % src)
     logger.info('By User: %r' % usr.username)
     import_csv(src, usr.id)
+
+
+@celery.task
+def DownloadLMW():
+
+    baseFileName = "lmw_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    admFileName = DestinationPath + "/" + baseFileName + ".adm"
+    datFileName = DestinationPath + "/" + baseFileName + ".dat"
+
+    try:
+        # Connect to the file location at the RWS server
+        connection = urllib2.urlopen(LmwUrl)
+
+        # Read the file and put the data into a StringIO
+        stream = cStringIO.StringIO(connection.read())
+    except:
+        # TODO: HERE SHOULD BE LOGGING
+        logger.error("Could not download LMW data from RWS-LMW server.")
+        raise Exception("Could not download LMW data from RWS-LMW server.")
+
+    try:
+        # Open the zip file
+        zipped = zipfile.ZipFile(stream, 'r')
+        # Extract the two files of interest
+        # and write the data to the file system
+        with zipped.open("update.adm", 'r') as admData:
+            with open(admFileName, 'w') as admFile:
+                admFile.write(admData.read())
+
+        with zipped.open("update.dat", 'r') as datData:
+            with open(datFileName, 'w') as datFile:
+                datFile.write(datData.read())
+
+        # one day we should add the KWA data as well!
+    except:
+        # TODO: HERE SHOULD BE LOGGING
+        logger.error("Error opening or extracting LMW zip file.")
+        raise Exception("Error opening or extracting LMW zip file")
+
+    new_lmw_downloaded.delay(DestinationPath, admFileName, datFileName)
+
+    logger.info("LMW data successfully downloaded and send for processing ("
+                + admFileName + " + " + datFileName + ")")
+
+
+@celery.task
+def new_lmw_downloaded(pathDir, admFilename, datFilename):
+
+    import_lmw(pathDir, admFilename, datFilename)

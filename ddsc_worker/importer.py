@@ -8,7 +8,9 @@ import shutil
 from django.conf import settings
 from django.contrib.auth.models import User
 from pandas.io.parsers import read_csv
+from pandas import DataFrame
 from tslib.readers import PiXmlReader
+from datetime import datetime, timedelta
 
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
@@ -60,13 +62,13 @@ def data_validate(tsOBJ, ts, src=None):
     i = 0
     for row in tsOBJ.iterrows():
         if ((diff_hard < abs(tsOBJ.value[i - 1] - tsOBJ.value[i]))
-        or (tsOBJ.value[i] > max_hard)
-        or (tsOBJ.value[i] < min_hard)):
+                or (tsOBJ.value[i] > max_hard)
+                or (tsOBJ.value[i] < min_hard)):
             tsOBJ['flag'][i] = '6'
             i += 1
         elif (diff_soft < abs(tsOBJ.value[i - 1] -
-        tsOBJ.value[i]) or (tsOBJ.value[i] > max_soft)
-         or (tsOBJ.value[i] < min_soft)):
+                              tsOBJ.value[i]) or (tsOBJ.value[i] > max_soft)
+                or (tsOBJ.value[i] < min_soft)):
             tsOBJ['flag'][i] = '3'
             i += 1
         else:
@@ -122,9 +124,9 @@ def import_csv(src, usr_id):
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             tsobjYes = data_validate(tsobj_grouped, ts, src)
-            st = write2_cassandra(tsobjYes, ts, src)
+            write2_cassandra(tsobjYes, ts, src)
 
-    data_delete(st, src)
+    data_delete(1, src)
     logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
@@ -270,3 +272,96 @@ def file_ignored(src, fileExtension):
     dst = pd['storage_base_path'] + pd['unrecognized']
     data_move(src, dst)
     raise Exception("[x] %r _FAILED to be imported" % src)
+
+
+def import_lmw(DestinationPath, admFileName, datFileName):
+    ## get the user which in this case should be LMW I guess
+    usr = User.objects.get(username='lmw_ddsc')
+    print usr.username
+    adm_src = DestinationPath + admFileName
+    dat_src = DestinationPath + datFileName
+    tsobj_indx = ReadLMW(adm_src, dat_src)
+    tsgrouped = tsobj_indx.groupby('SensorID')
+    nr = len(tsgrouped)
+    nr = str(nr)
+    logger.debug('There are %r timeseries in file : %r' % (nr, adm_src))
+    for name, tsobj_grouped in tsgrouped:
+        remoteid = tsobj_grouped['SensorID'][0]
+        ts = get_auth(usr, remoteid)  # user object and remote id
+        if ts is False:
+            data_move(adm_src, ERROR_file)
+            data_move(dat_src, ERROR_file)
+            logger.error(
+                '[x] File:--%r-- has been rejected because of authorization' %
+                adm_src)
+            raise Exception("[x] %r _FAILED to be imported" % (adm_src))
+        else:
+            ### I am not sure how to validate, maybe for later
+            # tsobjYes = data_validate(tsobj_grouped, ts, src)
+            ### but for now,
+            tsobjYes = tsobj_grouped
+            write2_cassandra(tsobjYes, ts, dat_src)
+
+    data_delete(1, adm_src)
+    data_delete(1, dat_src)
+    logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
+
+
+def ReadLMW(admFile, datFile):
+    with open(admFile) as f:
+        administration = f.readlines()
+    with open(datFile) as f:
+        data = f.readlines()
+
+    if len(administration) != len(data):
+        raise Exception("Input data is not of same length.")
+
+    # LMW interval in minutes
+    interval = 10
+    val_series = []
+    timestamp_series = []
+    remoteid_series = []
+
+    for i in range(len(administration)):
+        values = administration[i].split(",")
+        # Get the id of the timeserie
+        timeseriesId = values[0].strip() +\
+            "_" + values[1].strip() + "_" + values[3].strip()
+        # Get the time of the first value
+        values[7] = values[7].replace("JAN", "01")
+        values[7] = values[7].replace("FEB", "02")
+        values[7] = values[7].replace("MRT", "03")
+        values[7] = values[7].replace("APR", "04")
+        values[7] = values[7].replace("MEI", "05")
+        values[7] = values[7].replace("JUN", "06")
+        values[7] = values[7].replace("JUL", "07")
+        values[7] = values[7].replace("AUG", "08")
+        values[7] = values[7].replace("SEP", "09")
+        values[7] = values[7].replace("OKT", "10")
+        values[7] = values[7].replace("NOV", "11")
+        values[7] = values[7].replace("DEC", "12")
+        values[7] = values[7].replace("MET", "")
+        values[7] = values[7].strip()
+        timeFirstValue = datetime.strptime(values[7], "%d-%m-%y %H:%M") -\
+            timedelta(0, 0, 0, 0, 60)
+        # Get all the measurements
+        measurements = data[i].split(",")
+        if len(measurements) != 7:
+            raise Exception("Invalid number of measurements for timeserie.")
+
+        counter = 0
+        for j in range(6):
+            value = measurements[j].strip()
+            if value != "f" and value != "n":
+                TimeForValue = timeFirstValue +\
+                    timedelta(0, 0, 0, 0, interval * j)
+                val_series.append(float(value))
+                timestamp_series.append(TimeForValue)
+                remoteid_series.append(timeseriesId)
+                counter += 1
+
+    tsobj = DataFrame([timestamp_series, remoteid_series, val_series])
+    tsobj = tsobj.transpose()
+    tsobj.columns = ['tstamp', 'SensorID', 'value']
+    tsobj_indexed = tsobj.set_index(tsobj['tstamp'])
+    return tsobj_indexed
