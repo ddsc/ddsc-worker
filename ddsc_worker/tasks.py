@@ -149,7 +149,6 @@ def DownloadLMW():
         # Read the file and put the data into a StringIO
         stream = cStringIO.StringIO(connection.read())
     except:
-        # TODO: HERE SHOULD BE LOGGING
         logger.error("Could not download LMW data from RWS-LMW server.")
         raise Exception("Could not download LMW data from RWS-LMW server.")
 
@@ -168,11 +167,16 @@ def DownloadLMW():
 
         # one day we should add the KWA data as well!
     except:
-        # TODO: HERE SHOULD BE LOGGING
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
-    new_lmw_downloaded.delay(DestinationPath, admFileName, datFileName)
+    celery.send_task("ddsc_worker.tasks.new_lmw_downloaded",
+        kwargs={
+            'pathDir': DestinationPath,
+            'admFilename': admFileName,
+            'datFilename': datFileName
+        }
+    )
 
     logger.info("LMW data successfully downloaded and send for processing ("
                 + admFileName + " + " + datFileName + ")")

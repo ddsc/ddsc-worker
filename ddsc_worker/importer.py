@@ -278,8 +278,8 @@ def import_lmw(DestinationPath, admFileName, datFileName):
     ## get the user which in this case should be LMW I guess
     usr = User.objects.get(username='lmw_ddsc')
     print usr.username
-    adm_src = DestinationPath + admFileName
-    dat_src = DestinationPath + datFileName
+    adm_src = admFileName
+    dat_src = datFileName
     tsobj_indx = ReadLMW(adm_src, dat_src)
     tsgrouped = tsobj_indx.groupby('SensorID')
     nr = len(tsgrouped)
