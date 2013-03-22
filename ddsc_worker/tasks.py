@@ -141,6 +141,7 @@ def DownloadLMW():
     baseFileName = "lmw_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
     admFileName = DestinationPath + baseFileName + ".adm"
     datFileName = DestinationPath + baseFileName + ".dat"
+    kwaFileName = DestinationPath + baseFileName + ".kwa"
 
     try:
         # Connect to the file location at the RWS server
@@ -165,25 +166,30 @@ def DownloadLMW():
             with open(datFileName, 'w') as datFile:
                 datFile.write(datData.read())
 
+        with zipped.open("update.kwa", 'r') as datData:
+            with open(datFileName, 'w') as kwaFile:
+                kwaFile.write(datData.read())
+
         # one day we should add the KWA data as well!
     except:
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
-    new_lmw_downloaded.delay(DestinationPath, admFileName, datFileName)
+    new_lmw_downloaded.delay(DestinationPath, admFileName,
+                             datFileName, kwaFileName)
     celery.send_task("ddsc_worker.tasks.new_lmw_downloaded",
         kwargs={
             'pathDir': DestinationPath,
             'admFilename': admFileName,
-            'datFilename': datFileName
+            'datFilename': datFileName,
+            'kwaFilename': kwaFileName,
         }
     )
 
     logger.info("LMW data successfully downloaded and send for processing ("
-                + admFileName + " + " + datFileName + ")")
+        + admFileName + " + " + datFileName + " + " + kwaFileName + ")")
 
 
 @celery.task
-def new_lmw_downloaded(pathDir, admFilename, datFilename):
-
-    import_lmw(pathDir, admFilename, datFilename)
+def new_lmw_downloaded(pathDir, admFilename, datFilename, kwaFilename):
+    import_lmw(pathDir, admFilename, datFilename, kwaFilename)

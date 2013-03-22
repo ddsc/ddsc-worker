@@ -296,9 +296,6 @@ def import_lmw(DestinationPath, admFileName, datFileName):
                 adm_src)
             raise Exception("[x] %r _FAILED to be imported" % (adm_src))
         else:
-            ### I am not sure how to validate, maybe for later
-            # tsobjYes = data_validate(tsobj_grouped, ts, src)
-            ### but for now,
             tsobjYes = tsobj_grouped
             write2_cassandra(tsobjYes, ts, dat_src)
 
@@ -307,11 +304,13 @@ def import_lmw(DestinationPath, admFileName, datFileName):
     logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
 
 
-def ReadLMW(admFile, datFile):
+def ReadLMW(admFile, datFile, kwaFile):
     with open(admFile) as f:
         administration = f.readlines()
     with open(datFile) as f:
         data = f.readlines()
+    with open(kwaFile) as f:
+        data_quality = f.readlines()
 
     if len(administration) != len(data):
         raise Exception("Input data is not of same length.")
@@ -321,6 +320,7 @@ def ReadLMW(admFile, datFile):
     val_series = []
     timestamp_series = []
     remoteid_series = []
+    quality_series = []
 
     for i in range(len(administration)):
         values = administration[i].split(",")
@@ -346,12 +346,18 @@ def ReadLMW(admFile, datFile):
             timedelta(0, 0, 0, 0, 60)
         # Get all the measurements
         measurements = data[i].split(",")
+        quality = data_quality[i].split(",")
+
         if len(measurements) != 7:
             raise Exception("Invalid number of measurements for timeserie.")
+
+        if len(quality) != 7:
+            raise Exception("Invalid number of quality flags for timeserie.")
 
         counter = 0
         for j in range(6):
             value = measurements[j].strip()
+            value_flag = quality[j].strip()
             if value != "f" and value != "n":
                 TimeForValue = timeFirstValue +\
                     timedelta(0, 0, 0, 0, interval * j)
@@ -359,9 +365,16 @@ def ReadLMW(admFile, datFile):
                 timestamp_series.append(TimeForValue)
                 remoteid_series.append(timeseriesId)
                 counter += 1
+            if value_flag in [10, 30, 50, 70]:
+                quality_series.append('0')
+            elif value_flag in [2, 22, 24, 28, 42, 44, 48, 62, 68]:
+                quality_series.append('3')
+            else:
+                quality_series.append('6')
 
-    tsobj = DataFrame([timestamp_series, remoteid_series, val_series])
+    tsobj = DataFrame([timestamp_series, remoteid_series,
+                       val_series, quality_series])
     tsobj = tsobj.transpose()
-    tsobj.columns = ['tstamp', 'SensorID', 'value']
+    tsobj.columns = ['tstamp', 'SensorID', 'value', 'flag']
     tsobj_indexed = tsobj.set_index(tsobj['tstamp'])
     return tsobj_indexed
