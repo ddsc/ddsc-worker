@@ -139,8 +139,8 @@ def new_socket_detected(pathDir, fileName):
 def DownloadLMW():
 
     baseFileName = "lmw_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    admFileName = DestinationPath + "/" + baseFileName + ".adm"
-    datFileName = DestinationPath + "/" + baseFileName + ".dat"
+    admFileName = DestinationPath + baseFileName + ".adm"
+    datFileName = DestinationPath + baseFileName + ".dat"
 
     try:
         # Connect to the file location at the RWS server
