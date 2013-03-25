@@ -360,8 +360,7 @@ def ReadLMW(admFile, datFile, kwaFile):
         counter = 0
         for j in range(6):
             value = measurements[j].strip()
-            value_flag = quality[j].strip()
-            value_flag = int(value_flag)
+            value_flag = int(quality[j])
             if value != "f" and value != "n":
                 TimeForValue = timeFirstValue +\
                     timedelta(0, 0, 0, 0, interval * j)
