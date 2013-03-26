@@ -185,33 +185,35 @@ def import_geotiff(src, filename, dst, usr_id):
     remoteid = get_remoteid_by_filename(filename)
     ts = get_auth(usr, remoteid)
 
-    str_year = str(timestamp.year[0])
-    str_month = str(timestamp.month[0])
-    str_day = str(timestamp.day[0])
-    store_dst = dst + ts.uuid + '/' +\
-        str_year + '-' + str_month + '-' + str_day + '/'
-    store_dstf = store_dst + filename
-
     logger.debug("[x] publishing %r into GeoServer..." % src)
 
     #  since it is a subprocess, we are not sure if it has been
     #  executed properly or not... Further check need to be done
     #  before proceed to the next stage
-    values = {"value": store_dstf}
 
     if ts is not False:
         str_year = str(timestamp.year[0])
         str_month = str(timestamp.month[0])
         str_day = str(timestamp.day[0])
-        store_dst = dst + ts.uuid + '/' +\
+        store_dst = dst + ts.name + '/' +\
             str_year + '-' + str_month + '-' + str_day + '/'
-        store_dstf = store_dst + filename
+
+        gs_lyer_name = filename.replace('.zip', '')
+        gs_store_name = gs_lyer_name
+        gs_lyer_grp_name = ts.name + "_" + str_year + '-' +\
+            str_month + '-' + str_day
+        gs_workspc_name = gs_setting['geoserver_workspace']
+
+        values = {"value": gs_lyer_grp_name}
 
         hao = call(['java', '-jar',
             gs_setting['geoserver_jar_pusher'],
             src, gs_setting['geoserver_url'],
             gs_setting['geoserver_username'],
-            gs_setting['geoserver_password']])
+            gs_setting['geoserver_password'],
+            gs_workspc_name,
+            gs_store_name,
+            gs_lyer_grp_name])
 
         if hao == 0:
             logger.debug("[x] Published %r to GeoServer " % src)
