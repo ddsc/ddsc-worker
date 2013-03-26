@@ -281,7 +281,7 @@ def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
     dat_src = datFileName
     kwa_src = kwaFileName
 
-    tsobj_indx = ReadLMW(adm_src, dat_src, kwa_src)
+    tsobj_indx = read_lmw(adm_src, dat_src, kwa_src)
     tsgrouped = tsobj_indx.groupby('SensorID')
     nr = len(tsgrouped)
     nr = str(nr)
@@ -307,7 +307,7 @@ def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
     logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
 
 
-def ReadLMW(admFile, datFile, kwaFile):
+def read_lmw(admFile, datFile, kwaFile):
     with open(admFile) as f:
         administration = f.readlines()
     with open(datFile) as f:
