@@ -111,7 +111,7 @@ def new_file_detected(pathDir, fileName):
         dst = pd['storage_base_path'] + pd['pdf']
         import_file(pathDir, fileName, dst, usr.id)
     elif (fileExtension == ".tif" or
-    fileExtension == ".tiff"):
+    fileExtension == ".tiff" or fileExtension == ".zip"):
         dst = pd['storage_base_path'] + pd['geotiff']
         import_geotiff(pathDir, fileName, dst, usr.id)
     elif (fileExtension == ".xml"):
@@ -136,7 +136,7 @@ def new_socket_detected(pathDir, fileName):
 
 
 @celery.task
-def DownloadLMW():
+def download_lmw():
 
     baseFileName = "lmw_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
     admFileName = DestinationPath + baseFileName + ".adm"
