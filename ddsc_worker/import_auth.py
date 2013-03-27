@@ -92,7 +92,12 @@ def get_remoteid_by_filename(filename):
 
 def get_timestamp_by_filename(filename):
     f1 = filename.find("_")
-    f2 = filename.find("_", f1 + 1)
+
+    if filename.count("_") > 1:
+        f2 = filename.find("_", f1 + 1)
+    else:
+        f2 = f2 = filename.find(".", f1 + 1)
+
     tmstmp = filename[f1 + 1:f2]
     timestamp = pandas.date_range(tmstmp, periods=1)
     return timestamp

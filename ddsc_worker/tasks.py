@@ -98,9 +98,10 @@ def new_file_detected(pathDir, fileName):
         fileDirName, fileExtension = os.path.splitext(src)
     if fileExtension == ".csv":
         import_csv(src, usr.id)
-    elif (fileExtension == ".png") or\
-    (fileExtension == ".jpg") or\
-    fileExtension == ".jpeg":
+    elif (fileExtension == ".png") or \
+    (fileExtension == ".jpg") or \
+    fileExtension == ".jpeg" or fileExtension == ".tif" or \
+    fileExtension == ".tiff":
         dst = pd['storage_base_path'] + pd['image']
         import_file(pathDir, fileName, dst, usr.id)
     elif fileExtension == ".avi" or \
@@ -110,8 +111,7 @@ def new_file_detected(pathDir, fileName):
     elif fileExtension == ".pdf":
         dst = pd['storage_base_path'] + pd['pdf']
         import_file(pathDir, fileName, dst, usr.id)
-    elif (fileExtension == ".tif" or
-    fileExtension == ".tiff" or fileExtension == ".zip"):
+    elif (fileExtension == ".zip"):
         dst = pd['storage_base_path'] + pd['geotiff']
         import_geotiff(pathDir, fileName, dst, usr.id)
     elif (fileExtension == ".xml"):
