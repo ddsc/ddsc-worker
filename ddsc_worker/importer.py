@@ -48,36 +48,6 @@ def data_convert(src):
         return tsOBJ
 
 
-def data_validate(tsOBJ, ts, src=None):
-    # getting validation thresholds
-    # did not handle the situation where the threshold could be "None"
-    max_hard = ts.validate_max_hard
-    min_hard = ts.validate_min_hard
-    max_soft = ts.validate_max_soft
-    min_soft = ts.validate_min_soft
-    diff_hard = ts.validate_diff_hard
-    diff_soft = ts.validate_diff_soft
-
-    logger.debug("[x] validating %r" % (src))
-    i = 0
-    for row in tsOBJ.iterrows():
-        if ((diff_hard < abs(tsOBJ.value[i - 1] - tsOBJ.value[i]))
-                or (tsOBJ.value[i] > max_hard)
-                or (tsOBJ.value[i] < min_hard)):
-            tsOBJ['flag'][i] = '6'
-            i += 1
-        elif (diff_soft < abs(tsOBJ.value[i - 1] -
-                              tsOBJ.value[i]) or (tsOBJ.value[i] > max_soft)
-                or (tsOBJ.value[i] < min_soft)):
-            tsOBJ['flag'][i] = '3'
-            i += 1
-        else:
-            tsOBJ['flag'][i] = '0'
-            i += 1
-    logger.debug("[x] %r _validated" % (src))
-    return tsOBJ  # TO BE UPDATED AFTER THE REAL VALIDATION
-
-
 def write2_cassandra(tsOBJ_yes, ts, src):
     # DONE: write to Cassandra and Postgres
     # DONE: follow Carsten's coming code
@@ -123,8 +93,7 @@ def import_csv(src, usr_id):
                 src)
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
-            tsobjYes = data_validate(tsobj_grouped, ts, src)
-            write2_cassandra(tsobjYes, ts, src)
+            write2_cassandra(tsobj_grouped, ts, src)
 
     data_delete(1, src)
     logger.info('[x] File:--%r-- has been successfully imported' % src)
