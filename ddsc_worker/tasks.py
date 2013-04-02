@@ -14,6 +14,11 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core import management
 
+from django.utils import timezone
+from datetime import timedelta
+from ddsc_core.models.models import Timeseries
+from ddsc_core.models.models import StatusCache
+
 from ddsc_logging.handlers import DDSCHandler
 
 from ddsc_worker.celery import celery
@@ -193,3 +198,38 @@ def download_lmw():
 @celery.task
 def new_lmw_downloaded(pathDir, admFilename, datFilename, kwaFilename):
     import_lmw(pathDir, admFilename, datFilename, kwaFilename)
+
+
+@celery.task
+def calculate_status():
+    days_cache = 30
+    for ts in Timeseries.objects.all():
+        now = timezone.now() - timedelta(1)
+        first = now - timedelta(days_cache)
+        ts_latest = ts.latest_value_timestamp
+        if ts_latest != None:
+            if (now - ts_latest).days < days_cache:
+                for i in range(0, days_cache - 1):
+                    start = datetime(first.year,
+                                     first.month, first.day + i, 0, 0, 0)
+                    end = datetime(first.year,
+                                   first.month, first.day + 1 + i, 0, 0, 0)
+                    ts_latest = ts_latest.replace(tzinfo=None)
+                    if ts_latest > start:
+                        try:
+                            tsobj = ts.get_events(start, end)
+                            date_cursor = start.strftime('%Y-%m-%d')
+                            if tsobj.empty is False:
+                                st, cr = StatusCache.objects.get_or_create(
+                                    timeseries=ts, status_date=date_cursor)
+                                st.set_ts_status(tsobj)
+                                st.save()
+                                logger.debug(
+                                    'current timeseries: %r has' % ts.uuid +
+                                    'value for Date: %r' % date_cursor)
+                        except:
+                            logger.debug(
+                                'current timeseries: %r has' % ts.uuid +
+                                ' no value for Date: %r' % date_cursor)
+    logger.info('[x] Complete updating status for %r' % now.strftime(
+                                                            '%Y-%m-%d'))
