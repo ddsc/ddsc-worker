@@ -314,7 +314,7 @@ def read_lmw(admFile, datFile, kwaFile):
         values[7] = values[7].replace("OKT", "10")
         values[7] = values[7].replace("NOV", "11")
         values[7] = values[7].replace("DEC", "12")
-        values[7] = values[7].replace("ZMRT", "")
+        values[7] = values[7].replace("Z03", "")
         values[7] = values[7].replace("MET", "")
         values[7] = values[7].strip()
         timeFirstValue = datetime.strptime(values[7], "%d-%m-%y %H:%M") -\
