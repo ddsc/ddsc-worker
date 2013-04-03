@@ -24,7 +24,6 @@ gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 
 
 def data_convert(src):
-#    pydevd.settrace()
     try:
         logger.debug("[x] converting %r to pandas object" % (src))
         tsOBJ = read_csv(
@@ -32,20 +31,14 @@ def data_convert(src):
             parse_dates=True,
             names=['SensorID', 'value'],
         )
-        status = 1
     except:
-        logger.error('CSV file: %r ERROR to convert!' % src)
-        status = 0
-    if status == 0:
         logger.error("[x] %r _FAILED to be converted" % (src))
         data_move(src, ERROR_file)
         raise Exception('CSV file: %r ERROR to convert!' % src)
-        exit()
-    else:
-        tsOBJ['flag'] = 'None'
-        tsOBJ = tsOBJ.sort()
-        logger.debug("[x] %r _converted & sorted" % (src))
-        return tsOBJ
+    tsOBJ['flag'] = 'None'
+    tsOBJ = tsOBJ.sort()
+    logger.debug("[x] %r _converted & sorted" % (src))
+    return tsOBJ
 
 
 def write2_cassandra(tsOBJ_yes, ts, src):
