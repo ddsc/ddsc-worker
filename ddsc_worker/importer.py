@@ -288,6 +288,7 @@ def read_lmw(admFile, datFile, kwaFile):
     timestamp_series = []
     remoteid_series = []
     quality_series = []
+    zom_win = []
 
     for i in range(len(administration)):
         values = administration[i].split(",")
@@ -295,6 +296,9 @@ def read_lmw(admFile, datFile, kwaFile):
         timeseriesId = values[0].strip() +\
             "_" + values[1].strip() + "_" + values[3].strip()
         # Get the time of the first value
+        if values[7].find('MET') == -1:
+            zom_win = 'summer'
+
         values[7] = values[7].replace("JAN", "01")
         values[7] = values[7].replace("FEB", "02")
         values[7] = values[7].replace("MRT", "03")
@@ -310,8 +314,13 @@ def read_lmw(admFile, datFile, kwaFile):
         values[7] = values[7].replace("Z03", "")
         values[7] = values[7].replace("MET", "")
         values[7] = values[7].strip()
-        timeFirstValue = datetime.strptime(values[7], "%d-%m-%y %H:%M") -\
-            timedelta(0, 0, 0, 0, 60)
+
+        if zom_win == 'summer':
+            timeFirstValue = datetime.strptime(values[7], "%d-%m-%y %H:%M") -\
+                timedelta(0, 0, 0, 0, 120)
+        else:
+            timeFirstValue = datetime.strptime(values[7], "%d-%m-%y %H:%M") -\
+                timedelta(0, 0, 0, 0, 60)
         # Get all the measurements
         measurements = data[i].split(",")
         quality = data_quality[i].split(",")
