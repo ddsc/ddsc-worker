@@ -38,6 +38,22 @@ IMPORTER_PATH = {
         '/mnt/ftp/lmw_ddsc/',
 }
 
+IMPORTER_GEOSERVER = {
+    'geoserver_jar_pusher':  # where is the geotif_pub.jar file
+        '/opt/ddsc-worker/ddsc_worker/geotif_pub.jar',
+    'geoserver_url':
+        'http://p-ddsc-map-d1:8080/geoserver',
+    'geoserver_username':
+        'admin',
+    'geoserver_password':
+        'geoserver',
+}
+
+LMW_URL = {
+    'url':
+        'https://www.rijkswaterstaat.nl/rws/opendata/meetdata/meetdata.zip',
+}
+
 SMTP = {
     'host':
         '10.10.10.110',
