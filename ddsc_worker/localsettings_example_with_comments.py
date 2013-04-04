@@ -38,7 +38,7 @@ IMPORTER_PATH = {
         '/mnt/ftp/lmw_ddsc/',
 }
 
-SMTP_SETTINGS = {
+SMTP = {
     'host':
         '10.10.10.110',
     'port':
