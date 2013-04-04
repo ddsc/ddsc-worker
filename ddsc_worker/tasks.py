@@ -14,6 +14,8 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core import management
 
+import pytz
+
 from django.utils import timezone
 from datetime import timedelta
 from ddsc_core.models.models import Timeseries
@@ -38,6 +40,8 @@ DestinationPath = pd['lmw']
 
 lmw_url = getattr(settings, 'LMW_URL')
 LmwUrl = lmw_url['url']
+
+ams_tz = pytz.timezone('Europe/Amsterdam')
 
 
 @after_setup_task_logger.connect
@@ -207,18 +211,20 @@ def calculate_status():
         ts_latest = ts.latest_value_timestamp
         if ts_latest != None:
             if (now - ts_latest).days < days_cache:
-                for i in range(0, days_cache - 1):
+                for i in range(1, days_cache + 1):
                     start = datetime(first.year,
                                      first.month, first.day, 0, 0, 0) +\
                                      timedelta(i)
                     end = datetime(first.year,
                                    first.month, first.day, 0, 0, 0) +\
-                                   timedelta(i)
+                                   timedelta(i + 1)
                     ts_latest = ts_latest.replace(tzinfo=None)
                     if ts_latest > start:
+                        date_cursor = start.strftime('%Y-%m-%d')
                         try:
+                            start = ams_tz.localize(start)
+                            end = ams_tz.localize(end)
                             tsobj = ts.get_events(start, end)
-                            date_cursor = start.strftime('%Y-%m-%d')
                             if tsobj.empty is False:
                                 st, cr = StatusCache.objects.get_or_create(
                                     timeseries=ts, status_date=date_cursor)
