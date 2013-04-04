@@ -209,9 +209,11 @@ def calculate_status():
             if (now - ts_latest).days < days_cache:
                 for i in range(0, days_cache - 1):
                     start = datetime(first.year,
-                                     first.month, first.day + i, 0, 0, 0)
+                                     first.month, first.day, 0, 0, 0) +\
+                                     timedelta(i)
                     end = datetime(first.year,
-                                   first.month, first.day + 1 + i, 0, 0, 0)
+                                   first.month, first.day, 0, 0, 0) +\
+                                   timedelta(i)
                     ts_latest = ts_latest.replace(tzinfo=None)
                     if ts_latest > start:
                         try:
