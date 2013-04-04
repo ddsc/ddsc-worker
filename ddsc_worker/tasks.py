@@ -13,13 +13,19 @@ from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core import management
+from django.template import Context
+from django.template import Template
 
 import pytz
+import smtplib
 
 from django.utils import timezone
 from datetime import timedelta
 from ddsc_core.models.models import Timeseries
 from ddsc_core.models.models import StatusCache
+from ddsc_core.models.alarms import Alarm
+from ddsc_core.models.alarms import Alarm_Item
+from ddsc_core.models.alarms import Alarm_Active
 
 from ddsc_logging.handlers import DDSCHandler
 
@@ -33,7 +39,11 @@ from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
 from ddsc_worker.importer import import_pi_xml
 from ddsc_worker.importer import import_lmw
-#from ddsc_worker.importer import write2_cassandra
+
+SMTP_SETTINGS = getattr(settings, 'SMTP')
+SMTP_HOST = SMTP_SETTINGS['host']
+SMTP_PORT = SMTP_SETTINGS['port']
+FROM_ADDRESS = SMTP_SETTINGS['sender']
 
 pd = getattr(settings, 'IMPORTER_PATH')
 DestinationPath = pd['lmw']
@@ -239,3 +249,241 @@ def calculate_status():
                                 ' no value for Date: %r' % date_cursor)
     logger.info('[x] Complete updating status for %r' % now.strftime(
                                                             '%Y-%m-%d'))
+
+
+@celery.task
+def alarm_trigger():
+    for alm in Alarm.objects.filter(active_status=True):
+        try:
+            alm_act_list = Alarm_Active.objects.filter(alarm_id=alm.id)
+            ll = len(alm_act_list)
+            alm_act = alm_act_list[ll - 1]
+        except:
+            logger.debug('no alarm active objects in current alarm')
+            alm_act = Alarm_Active.objects.create(
+                alarm_id=alm.id,
+                first_triggered_on=timezone.now(),
+                message='none',
+                active=True,
+            )
+        final_decision = False
+        list_ts_info = ''
+        current_time = timezone.now()
+        time_diff = current_time - alm.last_checked
+        time_diff_sec = abs(time_diff.total_seconds())
+        alarm_or_not = []
+        if (alm != [] and time_diff_sec > alm.frequency * 60):
+            logger.info('executing, alarm name: %r' % alm.name)
+            logical_check = alm.logical_check
+            logger.debug('logical_check: %r' % logical_check)
+            for alm_itm in Alarm_Item.objects.filter(alarm_id=alm.id):
+                if alm_itm != []:
+                    try:
+                        ts_series = alm_itm.content_object.timeseries.all()
+                    except:
+                        ts_series = [alm_itm.content_object]
+                    logical_check_item = alm_itm.logical_check
+                    alarm_or_not_item = []
+                    for ts in ts_series:
+                        logger.debug('ts_lastest timestamp: %r'
+                            % ts.latest_value_timestamp)
+                        logger.debug('alarm_last_checked timestamp: %r'
+                            % alm.last_checked)
+                        if ts.latest_value_timestamp > (alm.last_checked):
+                            logger.debug('checking timeseries: %r' % \
+                                ts.uuid + 'within alarm item id %r' % \
+                                alm_itm.id)
+                            logger.debug('comparison type is:' \
+                                + '%r' % alm_itm.comparision)
+                            logger.debug('comparison value type is: ' \
+                                + '%r' % alm_itm.value_type)
+                            list_ts_info += 'Timeseries: ' + ts.uuid + \
+                                ' \t' + \
+                                'at ' + ts.latest_value_timestamp.\
+                                strftime('%Y-%m-%d %H:%M:%S+01') + ' \t' +\
+                                'value:' + str(ts.latest_value_number) +\
+                                 ' \t' + 'threshold:' + \
+                                 str(alm_itm.value_double) + '\n'
+                            if alm_itm.value_type == Alarm_Item.ValueType\
+                                                         .LATEST_VALUE:
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                      alm_itm.value_double,
+                                      ts.latest_value_number)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .NR_MEASUR:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                nr_measur = st_cache.nr_of_measurements_total
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_int, nr_measur)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .PR_RELIABLE:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                nr_reliable = st_cache\
+                                                  .nr_of_measurements_reliable
+                                nr_measur = st_cache.nr_of_measurements_total
+                                pr_reliable = nr_reliable / nr_measur * 100
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, pr_reliable)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .PR_DOUBTFUL:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                nr_doubtful = st_cache\
+                                              .nr_of_measurements_doubtful
+                                nr_measur = st_cache.nr_of_measurements_total
+                                pr_doubtful = nr_doubtful / nr_measur * 100
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, pr_doubtful)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .PR_UNRELIABLE:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                nr_unreliable = st_cache\
+                                                .nr_of_measurements_unreliable
+                                nr_measur = st_cache.nr_of_measurements_total
+                                pr_unreliable = nr_unreliable / nr_measur * 100
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, pr_unreliable)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .MIN_MEASUR:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                min_measur = st_cache.min_val
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, min_measur)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .MAX_MEASUR:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                max_measur = st_cache.max_val
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, max_measur)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .AVG_MEASUR:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                avg_measur = st_cache.mean_val
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, avg_measur)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                           .STD_MEASUR:
+                                st_cache = ts.statuscache_set.latest('pk')
+                                std_measur = st_cache.std_val
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_double, std_measur)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                       .TIME_SINCE_LAST_MEASUR:
+                                time_diff = timezone.now() -\
+                                                ts.latest_value_timestamp
+                                time_diff_sec = int(time_diff.total_seconds())
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        alm_itm.value_int, time_diff_sec)
+                                )
+                            elif alm_itm.value_type == Alarm_Item.ValueType\
+                                                    .PR_DEV_EXPECTED_NR_MEASUR:
+                                nr_measur = st_cache.nr_of_measurements_total
+                                nr_expected_measur = alm_itm.value_int
+                                pr_expected_deviation = alm_itm.value_double
+                                deviation = abs(nr_measur - nr_expected_measur)
+                                pr_deviation = float(deviation) /\
+                                                   nr_expected_measur
+                                alarm_or_not_item.append(
+                                    compare(alm_itm.comparision,
+                                        pr_expected_deviation, pr_deviation)
+                                )
+                        else:
+                            logger.debug('current alarm item has'
+                                ' already been checked')
+                if alarm_or_not_item != []:
+                    ds = decision(alarm_or_not_item,
+                        logical_check_item)
+                    logger.debug('alarm or not (item level)? ...: %r'
+                        % alarm_or_not_item)
+                    logger.debug('alarm or not (item level) decision: '
+                        '%r' % ds)
+                    alarm_or_not.append(ds)
+            alm.last_checked = timezone.now()
+            super(Alarm, alm).save()
+        else:
+            logger.debug('current alarm has been checked recently!')
+        if alarm_or_not != []:
+            logger.debug('alarm or not (alarm level)? ...: %r' % alarm_or_not)
+            final_decision = decision(alarm_or_not, logical_check)
+            logger.debug('final alarm or not? '
+                '%r' % final_decision)
+            if final_decision is True:
+                logger.info('[x] Alarm: ' + alm.name + ' with ID: ' +
+                               str(alm.pk) + ' is being triggered')
+                smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+                from_addr = FROM_ADDRESS
+                t = Template(alm.template)
+                CONTEXT_DICT = {
+                    'alarm_name': alm.name,
+                    'urgency': alm.urgency,
+                    'alarming_time': timezone.now(),  # utc time
+                    'list_timeseries': list_ts_info,
+                    'sender_name': alm.content_object,
+                }
+                c = Context(CONTEXT_DICT)
+                msg = t.render(c)
+                try:
+                    user_list = alm.content_object.members.all()
+                    for user in user_list:
+                        to_addr = user.email
+                        header = 'To:' + to_addr + '\n' + 'From: ' + \
+                            from_addr + '\n' + 'Subject: ALARM! \n'
+                        msg = header + msg
+                        smtp.sendmail(from_addr, to_addr, msg)
+                except:
+                    user = alm.content_object
+                    to_addr = user.email
+                    header = 'To:' + to_addr + '\n' + 'From: ' + \
+                            from_addr + '\n' + 'Subject: ALARM! \n'
+                    msg = header + msg
+                    smtp.sendmail(from_addr, to_addr, msg)
+                ### maintaining the alarm_active table ###
+                if alm_act.active == False:
+                    alm_act = Alarm_Active.objects.create(
+                        alarm_id=alm.id,
+                        first_triggered_on=timezone.now(),
+                        message=msg,
+                    )
+                else:
+                    alm_act.message = msg
+                    alm_act.save()
+            else:
+                if alm_act.active is True:
+                        alm_act.active = False
+                        alm_act.deactivated_on = timezone.now()
+                        alm_act.save()
+        logger.info('[x] Finish checking Alarm: %r ' % alm.name)
+
+
+def compare(x, y, z):
+    return {
+        1: y == z,
+        2: y != z,
+        3: y > z,
+        4: y < z,
+    }.get(x, 'error')
+
+
+def decision(x, y):
+    return {
+        0: sum(x) == len(x),
+        1: sum(x) != 0,
+    }.get(y, 'error')
