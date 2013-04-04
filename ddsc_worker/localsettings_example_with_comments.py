@@ -1,31 +1,29 @@
-from ddsc_worker.developmentsettings import * 
 DATABASES = {
     'default': {
-        'NAME': 'DDSC_DB',
+        'NAME': 'ddsc',
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'USER': 'shaoqing',
-        'PASSWORD': 'geoict',
-        'HOST': 'localhost', # empty string for localhost.
-        'PORT': '5432', # empty string for default.
+        'USER': 'xxxx',
+        'PASSWORD': 'xxxxxxxx',
+        'HOST': 'xx.xx.xxx.xxx',
+        'PORT': '',
     }
 }
+
 CASSANDRA = {
     'servers': [
-        '10.10.101.118:9160',
-#        'localhost:9160'
+        'xxx.xxx.xxx.xx:9160',
+        'xx.xxx.xxx.xx:9160',
+        'xx.xxx.xxx.xxx:9160',
     ],
-    'keyspace': 'speederKeySpace',
+    'keyspace': 'ddsc',
     'batch_size': 1000,
 }
 
-
 IMPORTER_PATH = {
-    'ddsc_logging':
-        '/home/shaoqing/gitrepo/ddsc-worker/var/log/ddsc_worker.log',
     'storage_base_path':
-        '/home/shaoqing/ddsc/',
+        '/mnt/file/',
     'rejected_file':  # where to put the csv file when problem occurs
-        'rejected_file/', # 
+        'rejected_csv/', #
     'image':  # where to put the image data, path will be created automatically
         'images/',
     'geotiff':  # where to put the rs image data, path will be created automatically
@@ -36,15 +34,15 @@ IMPORTER_PATH = {
         'pdf/',
     'unrecognized':  # where to put unrecognizable type of file, path will be created automatically
         'unknown/',
+    'lmw':
+        '/mnt/ftp/lmw_ddsc/',
 }
 
-IMPORTER_GEOSERVER = {
-    'geoserver_jar_pusher':  # where is the geotif_pub.jar file
-        '/home/shaoqing/gitrepo/ddsc-worker/ddsc_worker/geotif_pub.jar',
-    'geoserver_url':
-        'http://10.10.101.118:8080/geoserver',
-    'geoserver_username':
-        'admin',
-    'geoserver_password':
-        'geoserver',
+SMTP_SETTINGS = {
+    'host':
+        '10.10.10.110',
+    'port':
+        25,
+    'sender':
+        'no_reply@dijkdata.nl',
 }
