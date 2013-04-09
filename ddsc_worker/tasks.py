@@ -4,10 +4,11 @@ import logging
 import os
 import string
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import urllib2
 import zipfile
 import cStringIO
+import csv
 
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
@@ -20,9 +21,9 @@ import pytz
 import smtplib
 
 from django.utils import timezone
-from datetime import timedelta
 from ddsc_core.models.models import Timeseries
 from ddsc_core.models.models import StatusCache
+from ddsc_core.models.aquo import Unit
 from ddsc_core.models.alarms import Alarm
 from ddsc_core.models.alarms import Alarm_Item
 from ddsc_core.models.alarms import Alarm_Active
@@ -44,6 +45,9 @@ SMTP_SETTINGS = getattr(settings, 'SMTP')
 SMTP_HOST = SMTP_SETTINGS['host']
 SMTP_PORT = SMTP_SETTINGS['port']
 FROM_ADDRESS = SMTP_SETTINGS['sender']
+
+compensation = getattr(settings, 'COMPENSATION')
+COMPENSATION_CSV_PATH = compensation['csv_path']
 
 pd = getattr(settings, 'IMPORTER_PATH')
 DestinationPath = pd['lmw']
@@ -487,3 +491,85 @@ def decision(x, y):
         0: sum(x) == len(x),
         1: sum(x) != 0,
     }.get(y, 'error')
+
+
+@celery.task
+def compensation_tool():
+    f_csv = COMPENSATION_CSV_PATH
+    logger.info('[x] Calculating compensation')
+    with open(f_csv, 'rb') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            water_pr_id = row[0]
+            air_pr_id = row[1]
+            water_ht_id = row[2]
+            ref_ht_id = row[3]
+            cable_len_id = row[4]
+            correction_id = row[5]
+            max_timeDiff = row[6]
+            max_timeDiff = timedelta(0, 0, 0, 0, int(max_timeDiff))
+            water_dpt_id = row[7]
+
+            try:
+                ts_waterPr = Timeseries.objects.get(uuid=water_pr_id)
+                ts_waterHt = Timeseries.objects.get(uuid=water_ht_id)
+                ts_air_pr = Timeseries.objects.get(uuid=air_pr_id)
+                ts_waterDpt = Timeseries.objects.get(uuid=water_dpt_id)
+            except:
+                logger.error('[x] current water pressure' +
+                   'timeseries does not exsist!')
+
+            if ts_waterHt.latest_value_timestamp <\
+                ts_waterPr.latest_value_timestamp or\
+                ts_waterDpt.latest_value_timestamp <\
+                ts_waterPr.latest_value_timestamp:
+
+                if (timezone.now() - max_timeDiff) <\
+                    ts_air_pr.latest_value_timestamp:
+                    ts_ref_ht = Timeseries.objects.get(uuid=ref_ht_id)
+                    ts_cable_len = Timeseries.objects.get(uuid=cable_len_id)
+                    ts_correction = Timeseries.objects.get(uuid=correction_id)
+                    ref_ht = ts_ref_ht.latest_value_number
+                    cable_len = ts_cable_len.latest_value_number
+                    correction = ts_correction.latest_value_number
+                    water_pr = ts_waterPr.latest_value_number
+                    air_pr = ts_air_pr.latest_value_number
+
+                    if ts_ref_ht.unit != Unit.objects.get(code='m'):
+                        raise Exception(
+                            'reference hight unit is not meter')
+                    if ts_cable_len.unit != Unit.objects.get(code='m'):
+                        raise Exception('cable length unit is not meter')
+                    if ts_correction.unit != Unit.objects.get(code='m'):
+                        raise Exception(
+                            'correction value unit is not meter')
+                    if ts_air_pr.unit != Unit.objects.get(code='mbar'):
+                        raise Exception('air pressure unit is not mbar')
+                    if ts_waterPr.unit != Unit.objects.get(code='mbar'):
+                        raise Exception('water pressure unit is not mbar')
+                    if ts_waterHt.unit != Unit.objects.get(code='m'):
+                        raise Exception('water height unit is not meter')
+
+                    A = ref_ht
+                    B = cable_len
+                    C = correction
+                    signal_ba = water_pr
+                    ba = air_pr
+
+                    WS = (signal_ba - ba) / 98.06
+                    row = {'value': WS, 'flag': 'None'}
+
+                    ts_waterDpt.set_event(
+                        ts_waterPr.latest_value_timestamp, row)
+                    ts_waterDpt.save()
+
+                    if C is None or A is None or B is None:
+                        pass
+                    else:
+                        WS = (A - B) + (signal_ba - ba) / 98.06 - C
+                        row = {'value': WS, 'flag': 'None'}
+                        ts_waterHt.set_event(
+                            ts_waterPr.latest_value_timestamp, row)
+                        ts_waterHt.save()
+
+    logger.info('[x] Finished calculating compensation')

@@ -62,3 +62,8 @@ SMTP = {
     'sender':
         'no_reply@dijkdata.nl',
 }
+
+COMPENSATION = {
+    'csv_path':
+        '/mnt/file/xxxx'
+}
