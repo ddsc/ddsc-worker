@@ -102,60 +102,72 @@ def export_pi_xml(src, dst, **options):
 
 @celery.task
 def new_file_detected(pathDir, fileName):
-    src = pathDir + fileName
-    fileDirName, fileExtension = os.path.splitext(src)
-    fileExtension = string.lower(fileExtension)
-
-    usr = get_usr_by_folder(pathDir)
-
-    if usr == 0:
-        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
-        return
-    else:
-        logger.info('[x] start importing: %r' % src)
-        logger.info('By User: %r' % usr.username)
-
-    if fileExtension == ".filepart":
-        fileName = fileName.replace(".filepart", "")
+    try:
         src = pathDir + fileName
         fileDirName, fileExtension = os.path.splitext(src)
-    if fileExtension == ".csv":
-        import_csv(src, usr.id)
-    elif (fileExtension == ".png") or \
-    (fileExtension == ".jpg") or \
-    fileExtension == ".jpeg" or fileExtension == ".tif" or \
-    fileExtension == ".tiff":
-        dst = pd['storage_base_path'] + pd['image']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif fileExtension == ".avi" or \
-    fileExtension == ".wmv":
-        dst = pd['storage_base_path'] + pd['video']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif fileExtension == ".pdf":
-        dst = pd['storage_base_path'] + pd['pdf']
-        import_file(pathDir, fileName, dst, usr.id)
-    elif (fileExtension == ".zip"):
-        dst = pd['storage_base_path'] + pd['geotiff']
-        import_geotiff(pathDir, fileName, dst, usr.id)
-    elif (fileExtension == ".xml"):
-        import_pi_xml(src, usr.id)
-    else:
-        file_ignored(src, fileExtension)
+        fileExtension = string.lower(fileExtension)
+
+        usr = get_usr_by_folder(pathDir)
+
+        if usr == 0:
+            data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
+            logger.error('')
+            raise Exception('')
+        else:
+            logger.info('[x] start importing: %r' % src)
+            logger.info('By User: %r' % usr.username)
+
+        if fileExtension == ".filepart":
+            fileName = fileName.replace(".filepart", "")
+            src = pathDir + fileName
+            fileDirName, fileExtension = os.path.splitext(src)
+        if fileExtension == ".csv":
+            import_csv(src, usr.id)
+        elif (fileExtension == ".png") or \
+        (fileExtension == ".jpg") or \
+        fileExtension == ".jpeg" or fileExtension == ".tif" or \
+        fileExtension == ".tiff":
+            dst = pd['storage_base_path'] + pd['image']
+            import_file(pathDir, fileName, dst, usr.id)
+        elif fileExtension == ".avi" or \
+        fileExtension == ".wmv":
+            dst = pd['storage_base_path'] + pd['video']
+            import_file(pathDir, fileName, dst, usr.id)
+        elif fileExtension == ".pdf":
+            dst = pd['storage_base_path'] + pd['pdf']
+            import_file(pathDir, fileName, dst, usr.id)
+        elif (fileExtension == ".zip"):
+            dst = pd['storage_base_path'] + pd['geotiff']
+            import_geotiff(pathDir, fileName, dst, usr.id)
+        elif (fileExtension == ".xml"):
+            import_pi_xml(src, usr.id)
+        else:
+            file_ignored(src, fileExtension)
+    except:
+        x = pd['storage_base_path'] + pd['rejected_file']
+        y = fileName
+        new_file_detected.apply_async((x, y), queue='ddsc.failures')
+        raise Exception('task has been requeued to ddsc-failure')
 
 
 @celery.task
 def new_socket_detected(pathDir, fileName):
-    src = pathDir + fileName
-    usr = get_usr_by_ip(fileName)
+    try:
+        src = pathDir + fileName
+        usr = get_usr_by_ip(fileName)
 
-    if usr is False:
-        data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
-        raise Exception("[x] %r _FAILED to be imported" % src)
-        return
+        if usr is False:
+            str_path = pd['storage_base_path'] + pd['rejected_file']
+            data_move(src, str_path)
+            raise Exception("[x] %r _FAILED to be authorized" % src)
 
-    logger.info('[x] start importing: %r' % src)
-    logger.info('By User: %r' % usr.username)
-    import_csv(src, usr.id)
+        logger.info('[x] start importing: %r' % src)
+        logger.info('By User: %r' % usr.username)
+        import_csv(src, usr.id)
+    except:
+        new_socket_detected.apply_async((str_path, fileName),
+                queue='ddsc.failures')
+        raise Exception('task has been requeued to ddsc-failure')
 
 
 @celery.task
@@ -215,7 +227,13 @@ def download_lmw():
 
 @celery.task
 def new_lmw_downloaded(pathDir, admFilename, datFilename, kwaFilename):
-    import_lmw(pathDir, admFilename, datFilename, kwaFilename)
+    try:
+        import_lmw(pathDir, admFilename, datFilename, kwaFilename)
+    except:
+        new_lmw_downloaded.apply_async((pathDir, admFilename,
+                datFilename, kwaFilename),
+                queue='ddsc.failures')
+        raise Exception('task has been requeued to ddsc-failure')
 
 
 @celery.task
@@ -538,18 +556,28 @@ def compensation_tool():
                     air_pr = ts_air_pr.latest_value_number
 
                     if ts_ref_ht.unit != Unit.objects.get(code='m'):
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
                         raise Exception(
                             'reference hight unit is not meter')
                     if ts_cable_len.unit != Unit.objects.get(code='m'):
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
                         raise Exception('cable length unit is not meter')
                     if ts_correction.unit != Unit.objects.get(code='m'):
                         raise Exception(
                             'correction value unit is not meter')
                     if ts_air_pr.unit != Unit.objects.get(code='mbar'):
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
                         raise Exception('air pressure unit is not mbar')
                     if ts_waterPr.unit != Unit.objects.get(code='mbar'):
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
                         raise Exception('water pressure unit is not mbar')
                     if ts_waterHt.unit != Unit.objects.get(code='m'):
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
                         raise Exception('water height unit is not meter')
 
                     A = ref_ht

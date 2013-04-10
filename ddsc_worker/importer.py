@@ -231,9 +231,9 @@ def import_pi_xml(src, usr_id):
 
 
 def file_ignored(src, fileExtension):
-    logger.info('[x]--Warning-- * %r' % fileExtension +
+    logger.error('[x]--Warning-- * %r' % fileExtension +
         ' FILE: %r is not acceptable' % src)
-    dst = pd['storage_base_path'] + pd['unrecognized']
+    dst = pd['storage_base_path'] + pd['rejected_file']
     data_move(src, dst)
     raise Exception("[x] %r _FAILED to be imported" % src)
 
