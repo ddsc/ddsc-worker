@@ -111,8 +111,8 @@ def new_file_detected(pathDir, fileName):
 
         if usr == 0:
             data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
-            logger.error('')
-            raise Exception('')
+            logger.error('[x] User-folder does not exist')
+            raise Exception('Failed to be authorized!')
         else:
             logger.info('[x] start importing: %r' % src)
             logger.info('By User: %r' % usr.username)
