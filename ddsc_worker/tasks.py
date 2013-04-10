@@ -198,6 +198,8 @@ def download_lmw():
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
+    time.sleep(10)  # might be good to sleep for some time to digest
+
     celery.send_task("ddsc_worker.tasks.new_lmw_downloaded",
         kwargs={
             'pathDir': DestinationPath,
