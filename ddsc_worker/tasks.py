@@ -449,7 +449,8 @@ def alarm_trigger():
             final_decision = decision(alarm_or_not, logical_check)
             logger.debug('final alarm or not? '
                 '%r' % final_decision)
-            if final_decision is True:
+            if final_decision is True and alm.message_type == \
+                Alarm.MessageType.EMAIL:
                 logger.info('[x] Alarm: ' + alm.name + ' with ID: ' +
                                str(alm.pk) + ' is being triggered')
                 smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
