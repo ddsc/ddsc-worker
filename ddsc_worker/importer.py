@@ -35,7 +35,6 @@ def data_convert(src):
         logger.error("[x] %r _FAILED to be converted" % (src))
         data_move(src, ERROR_file)
         raise Exception('CSV file: %r ERROR to convert!' % src)
-    tsOBJ['flag'] = 'None'
     tsOBJ = tsOBJ.sort()
     logger.debug("[x] %r _converted & sorted" % (src))
     return tsOBJ
