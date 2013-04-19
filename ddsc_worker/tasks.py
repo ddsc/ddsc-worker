@@ -172,7 +172,7 @@ def new_socket_detected(pathDir, fileName):
 
 @celery.task
 def download_lmw():
-
+    logger.info('[x] Starting LMW downloading...')
     baseFileName = "lmw_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
     admFileName = DestinationPath + baseFileName + ".adm"
     datFileName = DestinationPath + baseFileName + ".dat"
@@ -238,6 +238,7 @@ def new_lmw_downloaded(pathDir, admFilename, datFilename, kwaFilename):
 
 @celery.task
 def calculate_status():
+    logger.info('[x] Starting Status Calculating...')
     days_cache = 30
     for ts in Timeseries.objects.all():
         now = timezone.now() - timedelta(1)
@@ -277,6 +278,7 @@ def calculate_status():
 
 @celery.task
 def alarm_trigger():
+    logger.info('[x] Starting Alarm Checking...')
     for alm in Alarm.objects.filter(active_status=True):
         try:
             alm_act_list = Alarm_Active.objects.filter(alarm_id=alm.id)
