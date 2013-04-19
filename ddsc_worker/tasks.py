@@ -154,10 +154,10 @@ def new_file_detected(pathDir, fileName):
 def new_socket_detected(pathDir, fileName):
     try:
         src = pathDir + fileName
+        str_path = pd['storage_base_path'] + pd['rejected_file']
         usr = get_usr_by_ip(fileName)
 
         if usr is False:
-            str_path = pd['storage_base_path'] + pd['rejected_file']
             data_move(src, str_path)
             raise Exception("[x] %r _FAILED to be authorized" % src)
 
