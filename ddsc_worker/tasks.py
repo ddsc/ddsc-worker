@@ -163,6 +163,7 @@ def new_socket_detected(pathDir, fileName):
 
         logger.info('[x] start importing: %r' % src)
         logger.info('By User: %r' % usr.username)
+        time.sleep(5)
         import_csv(src, usr.id)
     except:
         new_socket_detected.apply_async((str_path, fileName),
