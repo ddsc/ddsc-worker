@@ -526,9 +526,9 @@ def compensation_tool():
             water_pr_id = row[0]
             air_pr_id = row[1]
             water_ht_id = row[2]
-            ref_ht_id = row[3]
-            cable_len_id = row[4]
-            correction_id = row[5]
+            ref_ht = row[3]
+            cable_len = row[4]
+            correction = row[5]
             max_timeDiff = row[6]
             max_timeDiff = timedelta(0, 0, 0, 0, int(max_timeDiff))
             water_dpt_id = row[7]
@@ -539,7 +539,7 @@ def compensation_tool():
                 ts_air_pr = Timeseries.objects.get(uuid=air_pr_id)
                 ts_waterDpt = Timeseries.objects.get(uuid=water_dpt_id)
             except:
-                logger.error('[x] current water pressure' +
+                logger.error('[x] current' +
                    'timeseries does not exsist!')
 
             if ts_waterHt.latest_value_timestamp <\
@@ -549,27 +549,38 @@ def compensation_tool():
 
                 if (timezone.now() - max_timeDiff) <\
                     ts_air_pr.latest_value_timestamp:
-                    ts_ref_ht = Timeseries.objects.get(uuid=ref_ht_id)
-                    ts_cable_len = Timeseries.objects.get(uuid=cable_len_id)
-                    ts_correction = Timeseries.objects.get(uuid=correction_id)
-                    ref_ht = ts_ref_ht.latest_value_number
-                    cable_len = ts_cable_len.latest_value_number
-                    correction = ts_correction.latest_value_number
                     water_pr = ts_waterPr.latest_value_number
                     air_pr = ts_air_pr.latest_value_number
 
-                    if ts_ref_ht.unit != Unit.objects.get(code='m'):
+                    if ref_ht == '':
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
+                        logger.error('reference hight unit' +
+                            ' is not indicated')
                         raise Exception(
-                            'reference hight unit is not meter')
-                    if ts_cable_len.unit != Unit.objects.get(code='m'):
+                            'reference hight unit is not indicated')
+                    else:
+                        ref_ht = float(ref_ht)
+
+                    if cable_len == '':
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
-                        raise Exception('cable length unit is not meter')
-                    if ts_correction.unit != Unit.objects.get(code='m'):
+                        logger.error('cable length' +
+                            ' is not indicated')
+                        raise Exception('cable length is not indicated')
+                    else:
+                        cable_len = float(cable_len)
+
+                    if correction == '':
+                        compensation_tool.apply_async((),
+                            queue='ddsc.failures')
+                        logger.error('correction value' +
+                            ' is not indicated')
                         raise Exception(
-                            'correction value unit is not meter')
+                            'correction value is not indicated')
+                    else:
+                        correction = float(correction)
+
                     if ts_air_pr.unit != Unit.objects.get(code='mbar'):
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
@@ -590,7 +601,7 @@ def compensation_tool():
                     ba = air_pr
 
                     WS = (signal_ba - ba) / 98.06
-                    row = {'value': WS, 'flag': 'None'}
+                    row = {'value': WS}
 
                     ts_waterDpt.set_event(
                         ts_waterPr.latest_value_timestamp, row)
