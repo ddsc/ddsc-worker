@@ -216,6 +216,7 @@ def import_pi_xml(src, usr_id):
             raise Exception("[x] %r _FAILED to be imported" % (src))
         else:
             try:
+                del df['flag']
                 ts.set_events(df)
                 ts.save()
                 logger.debug("[x] %r _written" % (src))
