@@ -1,7 +1,4 @@
-"""
-the authorization for ddsc worker
-"""
-
+# (c) Fugro Geoservices. MIT licensed, see LICENSE.rst.
 from __future__ import absolute_import
 
 import logging
