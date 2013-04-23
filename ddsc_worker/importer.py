@@ -42,8 +42,6 @@ def data_convert(src):
 
 
 def write2_cassandra(tsOBJ_yes, ts, src):
-    # DONE: write to Cassandra and Postgres
-    # DONE: follow Carsten's coming code
     try:
         tsOBJ_yes = tsOBJ_yes.tz_localize('UTC')
         del tsOBJ_yes['SensorID']
@@ -78,7 +76,7 @@ def import_csv(src, usr_id):
     logger.debug('There are %r timeseries in file : %r' % (nr, src))
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
-        ts = get_auth(usr, remoteid)  # user object and remote id
+        ts = get_auth(usr, remoteid)
         if ts is False:
             data_move(src, ERROR_file)
             logger.error(
@@ -148,10 +146,6 @@ def import_geotiff(src, filename, dst, usr_id):
     ts = get_auth(usr, remoteid)
 
     logger.debug("[x] publishing %r into GeoServer..." % src)
-
-    #  since it is a subprocess, we are not sure if it has been
-    #  executed properly or not... Further check need to be done
-    #  before proceed to the next stage
 
     if ts is not False:
         str_year = str(timestamp.year[0])
