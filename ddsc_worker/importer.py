@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 pd = getattr(settings, 'IMPORTER_PATH')
 ERROR_file = pd['storage_base_path'] + pd['rejected_file']
+OK_file = pd['storage_base_path'] + pd['accepted_file']
 gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 
 
@@ -87,7 +88,7 @@ def import_csv(src, usr_id):
         else:
             write2_cassandra(tsobj_grouped, ts, src)
 
-    data_delete(1, src)
+    data_move(src, OK_file)
     logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
@@ -226,7 +227,7 @@ def import_pi_xml(src, usr_id):
                 data_move(src, ERROR_file)
                 raise Exception('piXML file: %r ERROR to convert!' % src)
 
-    data_delete(1, src)
+    data_move(src, OK_file)
     logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
@@ -265,9 +266,9 @@ def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
             tsobjYes = tsobj_grouped
             write2_cassandra(tsobjYes, ts, dat_src)
 
-    data_delete(1, adm_src)
-    data_delete(1, dat_src)
-    data_delete(1, kwa_src)
+    data_move(adm_src, OK_file)
+    data_move(dat_src, OK_file)
+    data_move(kwa_src, OK_file)
     logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
 
 
@@ -356,3 +357,10 @@ def read_lmw(admFile, datFile, kwaFile):
     tstamp = DataFrame(timestamp_series, columns=['ts'])
     tsobj_indexed = tsobj.set_index(tstamp['ts'])
     return tsobj_indexed
+
+
+def make_file_name_unique(file_name):
+    pos = file_name.find('.')
+    time_string = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    new_name = file_name[0:pos] + '_' + time_string + file_name[pos:]
+    return new_name

@@ -40,6 +40,8 @@ from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
 from ddsc_worker.importer import import_pi_xml
 from ddsc_worker.importer import import_lmw
+from ddsc_worker.importer import make_file_name_unique
+
 
 SMTP_SETTINGS = getattr(settings, 'SMTP')
 SMTP_HOST = SMTP_SETTINGS['host']
@@ -122,6 +124,10 @@ def new_file_detected(pathDir, fileName):
             src = pathDir + fileName
             fileDirName, fileExtension = os.path.splitext(src)
         if fileExtension == ".csv":
+            new_fileName = make_file_name_unique(fileName)
+            os.rename(pathDir + fileName, pathDir + new_fileName)
+            fileName = new_fileName
+            src = pathDir + new_fileName
             import_csv(src, usr.id)
         elif (fileExtension == ".png") or \
         (fileExtension == ".jpg") or \
@@ -140,6 +146,10 @@ def new_file_detected(pathDir, fileName):
             dst = pd['storage_base_path'] + pd['geotiff']
             import_geotiff(pathDir, fileName, dst, usr.id)
         elif (fileExtension == ".xml"):
+            new_fileName = make_file_name_unique(fileName)
+            os.rename(pathDir + fileName, pathDir + new_fileName)
+            src = pathDir + new_fileName
+            fileName = new_fileName
             import_pi_xml(src, usr.id)
         else:
             file_ignored(src, fileExtension)
