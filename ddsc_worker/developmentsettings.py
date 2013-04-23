@@ -1,3 +1,4 @@
+# (c) Fugro GeoServices. MIT licensed, see LICENSE.rst.
 from ddsc_worker.settings import *  # NOQA
 
 DEBUG = True
