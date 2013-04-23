@@ -324,7 +324,7 @@ def alarm_trigger():
                                 + '%r' % alm_itm.comparision)
                             logger.debug('comparison value type is: ' \
                                 + '%r' % alm_itm.value_type)
-                            list_ts_info += 'Timeseries: ' + ts.uuid + \
+                            list_ts_info += 'Timeseries: ' + ts.name + \
                                 ' \t' + \
                                 'at ' + ts.latest_value_timestamp.\
                                 strftime('%Y-%m-%d %H:%M:%S+01') + ' \t' +\
