@@ -36,6 +36,8 @@ IMPORTER_PATH = {
         'unknown/',
     'lmw':
         '/mnt/ftp/lmw_ddsc/',
+    'accepted_file':
+        'accepted_file/',
 }
 
 IMPORTER_GEOSERVER = {
