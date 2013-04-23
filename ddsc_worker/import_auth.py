@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_auth(usr, remote_id):
-    #  TODO: put the commented back after fixing has_perm problem
     ts = get_timeseries_by_remoteid(usr, remote_id)
     if ts == 0:
         return False
@@ -39,7 +38,6 @@ def get_auth(usr, remote_id):
 
 
 def get_usr_by_ip(fileName):
-    #  the seperator shall be _ like 192.168.22.130_bla001.csv
     f = fileName.find("_")
     iplable = fileName[0:f]
     try:
