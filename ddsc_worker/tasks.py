@@ -216,12 +216,11 @@ def download_lmw():
             with open(kwaFileName, 'w') as kwaFile:
                 kwaFile.write(kwaData.read())
 
-        # one day we should add the KWA data as well!
     except:
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
-    time.sleep(10)  # might be good to sleep for some time to digest
+    time.sleep(10)  #good to sleep for some time to digest
 
     celery.send_task("ddsc_worker.tasks.new_lmw_downloaded",
         kwargs={
