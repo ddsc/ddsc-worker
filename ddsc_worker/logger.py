@@ -1,3 +1,4 @@
+# (c) N&S. MIT licensed, see LICENSE.rst.
 """Persist (distributed) log messages to a database.
 
 This code will bind a queue named `ddsc.log` to a topic exchange with the same
