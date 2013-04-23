@@ -1,3 +1,4 @@
+# (c) Fugro GeoServices. MIT licensed, see LICENSE.rst.
 from __future__ import absolute_import
 
 from celery import Celery
