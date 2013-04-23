@@ -1,3 +1,4 @@
+# (c) Fugro GeoServices. MIT licensed, see LICENSE.rst.
 DATABASES = {
     'default': {
         'NAME': 'ddsc',
