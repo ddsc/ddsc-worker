@@ -62,7 +62,7 @@ def get_usr_by_folder(pathDir):
 
 def get_timeseries_by_remoteid(usr, remoteid):
     try:
-        idmp = IdMapping.objects.get(user=usr, remote_id=remoteid)
+        idmp = IdMapping.objects.get(user=usr, remote_id=str(remoteid))
         ts = idmp.timeseries
         return ts
     except IdMapping.DoesNotExist:
