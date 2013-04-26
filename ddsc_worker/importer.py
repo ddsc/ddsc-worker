@@ -49,11 +49,13 @@ def write2_cassandra(tsOBJ_yes, ts, src):
         ts.set_events(tsOBJ_yes)
         ts.save()
         logger.debug("[x] %r _written" % (src))
-    except:
-        logger.error("[x] %r _FAILED to be written to cassandra" % (src))
+    except Exception, e:
+        logger.error(
+            "[x] %r _FAILED to be written to cassandra",
+            src, exc_info=True
+        )
         data_move(src, ERROR_file)
-        raise Exception('CSV file: %r ERROR to convert!' % src)
-        exit()
+        raise e
 
 
 def data_delete(wStatus, src):
@@ -81,15 +83,16 @@ def import_csv(src, usr_id):
         ts = get_auth(usr, remoteid)
         if ts is False:
             logger.debug(
-                '[x] Timeseries:--%r-- has been rejected because of authorization' %
-                remoteid)
+                '[x] Timeseries %r has been rejected because of authorization',
+                remoteid
+            )
             auth_tag += 1
         else:
             write2_cassandra(tsobj_grouped, ts, src)
     if str(auth_tag) == nr:
         logger.error('[x] File:--%r-- has been fully rejected' % src)
         data_move(src, ERROR_file)
-        raise Exception("[x] In : %r  All of the timeseries failed" 
+        raise Exception("[x] In : %r  All of the timeseries failed"
             " to be imported because of auth" % (src))
     elif auth_tag == 0:
         data_move(src, OK_file)
@@ -97,7 +100,7 @@ def import_csv(src, usr_id):
     else:
         data_move(src, ERROR_file)
         logger.warning('[x] File:--%r-- has been only partly imported' % src)
-        raise Exception("[x] In : %r  Some of the timeseries failed" 
+        raise Exception("[x] In : %r  Some of the timeseries failed"
             " to be imported because of auth" % (src))
 
 
