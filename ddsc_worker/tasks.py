@@ -496,7 +496,7 @@ def alarm_trigger():
                     smtp.sendmail(from_addr, to_addr, msg)
                 ### maintaining the alarm_active table ###
                 if alm_act.active == False:
-                    alm_act = Alarm_Active.objects.create(
+                    Alarm_Active.objects.create(
                         alarm_id=alm.id,
                         first_triggered_on=timezone.now(),
                         message=msg,
