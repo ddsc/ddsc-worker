@@ -80,7 +80,7 @@ def import_csv(src, usr_id):
         remoteid = tsobj_grouped['SensorID'][0]
         ts = get_auth(usr, remoteid)
         if ts is False:
-            logger.error(
+            logger.debug(
                 '[x] Timeseries:--%r-- has been rejected because of authorization' %
                 remoteid)
             auth_tag += 1
