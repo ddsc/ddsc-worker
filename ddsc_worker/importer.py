@@ -86,7 +86,7 @@ def import_csv(src, usr_id):
             auth_tag += 1
         else:
             write2_cassandra(tsobj_grouped, ts, src)
-    if auth_tag == nr:
+    if str(auth_tag) == nr:
         logger.error('[x] File:--%r-- has been fully rejected' % src)
         raise Exception("[x] In : %r  All of the timeseries failed" 
             " to be imported because of auth" % (src))
