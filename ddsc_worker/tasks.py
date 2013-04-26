@@ -297,12 +297,13 @@ def alarm_trigger():
             alm_act = alm_act_list[ll - 1]
         except:
             logger.debug('no alarm active objects in current alarm')
-            alm_act = Alarm_Active.objects.create(
+            Alarm_Active.objects.create(
                 alarm_id=alm.id,
                 first_triggered_on=timezone.now(),
                 message='none',
                 active=True,
             )
+            alm_act = Alarm_Active.objects.latest('pk')
         final_decision = False
         list_ts_info = ''
         current_time = timezone.now()
