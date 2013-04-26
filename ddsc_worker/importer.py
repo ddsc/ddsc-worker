@@ -75,7 +75,7 @@ def import_csv(src, usr_id):
     nr = len(tsgrouped)
     nr = str(nr)
     logger.debug('There are %r timeseries in file : %r' % (nr, src))
-    auth_tag = True
+    auth_tag = 0
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
         ts = get_auth(usr, remoteid)
@@ -83,17 +83,21 @@ def import_csv(src, usr_id):
             logger.error(
                 '[x] Timeseries:--%r-- has been rejected because of authorization' %
                 remoteid)
-            auth_tag = False
+            auth_tag += 1
         else:
             write2_cassandra(tsobj_grouped, ts, src)
-    if auth_tag == False:
+    if auth_tag == nr:
+        logger.error('[x] File:--%r-- has been fully rejected' % src)
+        raise Exception("[x] In : %r  All of the timeseries failed" 
+            " to be imported because of auth" % (src))
+    elif auth_tag == 0:
+        data_move(src, OK_file)
+        logger.info('[x] File:--%r-- has been successfully imported' % src)
+    else:
         data_move(src, ERROR_file)
         logger.warning('[x] File:--%r-- has been only partly imported' % src)
         raise Exception("[x] In : %r  Some of the timeseries failed" 
             " to be imported because of auth" % (src))
-    else:
-        data_move(src, OK_file)
-        logger.info('[x] File:--%r-- has been successfully imported' % src)
 
 
 def data_move(src, dst):
