@@ -338,7 +338,7 @@ def alarm_trigger():
                             list_ts_info += 'Timeseries: ' + ts.name + \
                                 ' \t' + \
                                 'at ' + ts.latest_value_timestamp.\
-                                strftime('%Y-%m-%d %H:%M:%S+01') + ' \t' +\
+                                strftime('%Y-%m-%d %H:%M:%S (UTC)') + ' \t' +\
                                 'value:' + str(ts.latest_value_number) +\
                                  ' \t' + 'threshold:' + \
                                  str(alm_itm.value_double) + '\n'
