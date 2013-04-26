@@ -301,7 +301,7 @@ def alarm_trigger():
                 alarm_id=alm.id,
                 first_triggered_on=timezone.now(),
                 message='none',
-                active=True,
+                active=False,
             )
             alm_act = Alarm_Active.objects.latest('pk')
         final_decision = False
