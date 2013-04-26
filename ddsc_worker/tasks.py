@@ -552,9 +552,10 @@ def compensation_tool():
                 ts_waterDpt = Timeseries.objects.get(uuid=water_dpt_id)
             except:
                 logger.error('[x] current' +
-                   'timeseries does not exsist!')
+                   ' compensation-related timeseries does not exsist!')
                 raise Exception(
-                            'current time series does not exsist')
+                            'current compensation-related'+
+                            ' time series does not exsist')
 
             if ts_waterHt.latest_value_timestamp <\
                 ts_waterPr.latest_value_timestamp or\
