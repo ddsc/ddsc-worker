@@ -88,6 +88,7 @@ def import_csv(src, usr_id):
             write2_cassandra(tsobj_grouped, ts, src)
     if auth_tag == False:
         data_move(src, ERROR_file)
+        logger.warning('[x] File:--%r-- has been only partly imported' % src)
         raise Exception("[x] In : %r  Some of the timeseries failed" 
             " to be imported because of auth" % (src))
     else:
