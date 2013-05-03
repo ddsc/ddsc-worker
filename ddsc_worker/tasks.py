@@ -224,12 +224,10 @@ def download_lmw():
     time.sleep(10)  #good to sleep for some time to digest
 
     new_lmw_downloaded(
-        kwargs={
-            'pathDir': DestinationPath,
-            'admFilename': admFileName,
-            'datFilename': datFileName,
-            'kwaFilename': kwaFileName,
-        }
+        pathDir=DestinationPath,
+        admFilename=admFileName,
+        datFilename=datFileName,
+        kwaFilename=kwaFileName
     )
 
     logger.info("LMW data successfully downloaded and send for processing ("
