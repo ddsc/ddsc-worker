@@ -223,7 +223,7 @@ def download_lmw():
 
     time.sleep(10)  #good to sleep for some time to digest
 
-    celery.send_task("ddsc_worker.tasks.new_lmw_downloaded",
+    new_lmw_downloaded(
         kwargs={
             'pathDir': DestinationPath,
             'admFilename': admFileName,
@@ -240,11 +240,12 @@ def download_lmw():
 def new_lmw_downloaded(pathDir, admFilename, datFilename, kwaFilename):
     try:
         import_lmw(pathDir, admFilename, datFilename, kwaFilename)
-    except:
+    except Exception, e:
+        logger.error("LMW download failed", exc_info=True)
         new_lmw_downloaded.apply_async((pathDir, admFilename,
                 datFilename, kwaFilename),
                 queue='ddsc.failures')
-        raise Exception('task has been requeued to ddsc-failure')
+        raise e
 
 
 @celery.task
