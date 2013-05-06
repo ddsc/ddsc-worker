@@ -221,8 +221,6 @@ def download_lmw():
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
-    time.sleep(10)  # good to sleep for some time to digest
-
     new_lmw_downloaded(
         pathDir=DestinationPath,
         admFilename=admFileName,
