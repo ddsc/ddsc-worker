@@ -221,7 +221,7 @@ def download_lmw():
         logger.error("Error opening or extracting LMW zip file.")
         raise Exception("Error opening or extracting LMW zip file")
 
-    time.sleep(10)  #good to sleep for some time to digest
+    time.sleep(10)  # good to sleep for some time to digest
 
     new_lmw_downloaded(
         pathDir=DestinationPath,
@@ -254,7 +254,7 @@ def calculate_status():
         now = timezone.now() - timedelta(1)
         first = now - timedelta(days_cache)
         ts_latest = ts.latest_value_timestamp
-        if ts_latest != None:
+        if ts_latest is not None:
             if (now - ts_latest).days < days_cache:
                 for i in range(1, days_cache + 1):
                     start = datetime(first.year,
@@ -327,12 +327,12 @@ def alarm_trigger():
                         logger.debug('alarm_last_checked timestamp: %r'
                             % alm.last_checked)
                         if ts.latest_value_timestamp > (alm.last_checked):
-                            logger.debug('checking timeseries: %r' % \
-                                ts.uuid + 'within alarm item id %r' % \
+                            logger.debug('checking timeseries: %r' %
+                                ts.uuid + 'within alarm item id %r' %
                                 alm_itm.id)
-                            logger.debug('comparison type is:' \
+                            logger.debug('comparison type is:'
                                 + '%r' % alm_itm.comparision)
-                            logger.debug('comparison value type is: ' \
+                            logger.debug('comparison value type is: '
                                 + '%r' % alm_itm.value_type)
                             list_ts_info += 'Timeseries: ' + ts.name + \
                                 ' \t' + \
@@ -494,7 +494,7 @@ def alarm_trigger():
                     msg = header + msg
                     smtp.sendmail(from_addr, to_addr, msg)
                 ### maintaining the alarm_active table ###
-                if alm_act.active == False:
+                if not alm_act.active:
                     Alarm_Active.objects.create(
                         alarm_id=alm.id,
                         first_triggered_on=timezone.now(),
@@ -553,7 +553,7 @@ def compensation_tool():
                 logger.error('[x] current' +
                    ' compensation-related timeseries does not exsist!')
                 raise Exception(
-                            'current compensation-related'+
+                            'current compensation-related' +
                             ' time series does not exsist')
 
             if ts_waterHt.latest_value_timestamp <\
