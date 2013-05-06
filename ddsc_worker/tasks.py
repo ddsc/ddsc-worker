@@ -1,15 +1,15 @@
 # (c) Fugro GeoServices. MIT licensed, see LICENSE.rst.
 from __future__ import absolute_import
 
+from datetime import datetime, timedelta
+import cStringIO
+import csv
 import logging
 import os
 import string
 import time
-from datetime import datetime, timedelta
 import urllib2
 import zipfile
-import cStringIO
-import csv
 
 from celery.signals import after_setup_task_logger
 from celery.utils.log import get_task_logger
@@ -17,17 +17,16 @@ from django.conf import settings
 from django.core import management
 from django.template import Context
 from django.template import Template
-
+from django.utils import timezone
 import pytz
 import smtplib
 
-from django.utils import timezone
-from ddsc_core.models.models import Timeseries
-from ddsc_core.models.models import StatusCache
-from ddsc_core.models.aquo import Unit
 from ddsc_core.models.alarms import Alarm
-from ddsc_core.models.alarms import Alarm_Item
 from ddsc_core.models.alarms import Alarm_Active
+from ddsc_core.models.alarms import Alarm_Item
+from ddsc_core.models.aquo import Unit
+from ddsc_core.models.models import StatusCache
+from ddsc_core.models.models import Timeseries
 
 from ddsc_logging.handlers import DDSCHandler
 
@@ -39,8 +38,8 @@ from ddsc_worker.importer import file_ignored
 from ddsc_worker.importer import import_csv
 from ddsc_worker.importer import import_file
 from ddsc_worker.importer import import_geotiff
-from ddsc_worker.importer import import_pi_xml
 from ddsc_worker.importer import import_lmw
+from ddsc_worker.importer import import_pi_xml
 from ddsc_worker.importer import make_file_name_unique
 
 
@@ -164,7 +163,7 @@ def new_file_detected(pathDir, fileName):
 @celery.task
 def new_socket_detected(pathDir, fileName):
     try:
-        src = pathDir + fileName
+        src = os.path.join(pathDir, fileName)
         str_path = pd['storage_base_path'] + pd['rejected_file']
         usr = get_usr_by_ip(fileName)
 
@@ -172,14 +171,15 @@ def new_socket_detected(pathDir, fileName):
             data_move(src, str_path)
             raise Exception("[x] %r _FAILED to be authorized" % src)
 
-        logger.info('[x] start importing: %r' % src)
-        logger.info('By User: %r' % usr.username)
-        time.sleep(5)
+        logger.info('[x] start importing: %r', src)
+        logger.info('By User: %r', usr.username)
+        time.sleep(5)  # why sleep?
         import_csv(src, usr.id)
-    except:
+    except Exception, e:
+        logger.error("Unable to process socket data %s", src, exc_info=True)
         new_socket_detected.apply_async((str_path, fileName),
                 queue='ddsc.failures')
-        raise Exception('task has been requeued to ddsc-failure')
+        raise e
 
 
 @celery.task
