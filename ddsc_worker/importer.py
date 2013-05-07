@@ -27,18 +27,19 @@ gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 
 def data_convert(src):
     try:
-        logger.debug("[x] converting %r to pandas object" % (src))
+        logger.debug("[x] converting %r to pandas object", src)
         tsOBJ = read_csv(
             src, index_col=0,
             parse_dates=True,
             names=['SensorID', 'value'],
         )
-    except:
-        logger.error("[x] %r _FAILED to be converted" % (src))
+    except Exception, e:
+        logger.error(e, exc_info=True)
+        logger.error("[x] %r _FAILED to be converted", src)
         data_move(src, ERROR_file)
-        raise Exception('CSV file: %r ERROR to convert!' % src)
+        raise e
     tsOBJ = tsOBJ.sort()
-    logger.debug("[x] %r _converted & sorted" % (src))
+    logger.debug("[x] %r _converted & sorted", src)
     return tsOBJ
 
 
