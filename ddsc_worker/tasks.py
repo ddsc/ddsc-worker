@@ -140,7 +140,7 @@ def new_file_detected(pathDir, fileName):
             dst = pd['storage_base_path'] + pd['video']
             import_file(pathDir, fileName, dst, usr.id)
         elif fileExtension == ".pdf":
-            dst = pd['storage_base_path'] + pd['pdf']
+            dst = pd['storage_base_path'] + pd['file']
             import_file(pathDir, fileName, dst, usr.id)
         elif (fileExtension == ".zip"):
             dst = pd['storage_base_path'] + pd['geotiff']

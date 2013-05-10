@@ -31,8 +31,8 @@ IMPORTER_PATH = {
         'geo_tiff/',
     'video':  # where to put the video data, path will be created automatically
         'video/',
-    'pdf':  # where to put the pdf file, path will be created automatically
-        'pdf/',
+    'file':  # where to put other recognized files, path will be created automatically
+        'files/',
     'unrecognized':  # where to put unrecognizable type of file, path will be created automatically
         'unknown/',
     'lmw':
