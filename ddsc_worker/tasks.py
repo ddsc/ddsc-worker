@@ -293,7 +293,8 @@ def alarm_trigger():
     logger.info('[x] Starting Alarm Checking...')
     for alm in Alarm.objects.filter(active_status=True):
         try:
-            alm_act_list = Alarm_Active.objects.filter(alarm_id=alm.id)
+            alm_act_list = Alarm_Active.objects.\
+                filter(alarm_id=alm.id).order_by('pk')
             ll = len(alm_act_list)
             alm_act = alm_act_list[ll - 1]
         except:
