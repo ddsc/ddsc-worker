@@ -476,21 +476,6 @@ def alarm_trigger():
                 }
                 c = Context(CONTEXT_DICT)
                 msg = t.render(c)
-                try:
-                    user_list = alm.content_object.members.all()
-                    for user in user_list:
-                        to_addr = user.email
-                        header = 'To:' + to_addr + '\n' + 'From: ' + \
-                            from_addr + '\n' + 'Subject: ALARM! \n'
-                        msg = header + msg
-                        smtp.sendmail(from_addr, to_addr, msg)
-                except:
-                    user = alm.content_object
-                    to_addr = user.email
-                    header = 'To:' + to_addr + '\n' + 'From: ' + \
-                            from_addr + '\n' + 'Subject: ALARM! \n'
-                    msg = header + msg
-                    smtp.sendmail(from_addr, to_addr, msg)
                 ### maintaining the alarm_active table ###
                 if not alm_act.active:
                     Alarm_Active.objects.create(
@@ -498,6 +483,21 @@ def alarm_trigger():
                         first_triggered_on=timezone.now(),
                         message=msg,
                     )
+                    try:
+                        user_list = alm.content_object.members.all()
+                        for user in user_list:
+                            to_addr = user.email
+                            header = 'To:' + to_addr + '\n' + 'From: ' + \
+                                from_addr + '\n' + 'Subject: ALARM! \n'
+                            msg = header + msg
+                            smtp.sendmail(from_addr, to_addr, msg)
+                    except:
+                        user = alm.content_object
+                        to_addr = user.email
+                        header = 'To:' + to_addr + '\n' + 'From: ' + \
+                                from_addr + '\n' + 'Subject: ALARM! \n'
+                        msg = header + msg
+                        smtp.sendmail(from_addr, to_addr, msg)
                 else:
                     alm_act.message = msg
                     alm_act.save()
