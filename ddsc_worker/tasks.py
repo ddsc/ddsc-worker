@@ -59,6 +59,10 @@ LmwUrl = lmw_url['url']
 
 ams_tz = pytz.timezone('Europe/Amsterdam')
 
+ALARM = getattr(settings, 'ALARM')
+timelag_min = ALARM['timelag']
+timelag = datetime(0, 0, 0, 0, timelag_min, 0, 0)
+
 
 @after_setup_task_logger.connect
 def setup_ddsc_task_logger(**kwargs):
@@ -324,7 +328,8 @@ def alarm_trigger():
                             % ts.latest_value_timestamp)
                         logger.debug('alarm_last_checked timestamp: %r'
                             % alm.last_checked)
-                        if ts.latest_value_timestamp > (alm.last_checked):
+                        if ts.latest_value_timestamp + timelag > \
+                            (alm.last_checked):
                             logger.debug('checking timeseries: %r' %
                                 ts.uuid + 'within alarm item id %r' %
                                 alm_itm.id)
