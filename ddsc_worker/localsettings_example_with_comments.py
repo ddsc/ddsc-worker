@@ -70,3 +70,8 @@ COMPENSATION = {
     'csv_path':
         '/mnt/file/xxxx'
 }
+
+ALARM = {
+    'timelag':
+        '30',  # in minutes
+}
