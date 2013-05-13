@@ -61,7 +61,7 @@ ams_tz = pytz.timezone('Europe/Amsterdam')
 
 ALARM = getattr(settings, 'ALARM')
 timelag_min = ALARM['timelag']
-timelag = datetime(0, 0, 0, 0, timelag_min, 0, 0)
+timelag = datetime(0, 0, 0, 0, int(timelag_min), 0, 0)
 
 
 @after_setup_task_logger.connect
