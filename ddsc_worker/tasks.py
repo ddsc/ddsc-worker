@@ -6,6 +6,7 @@ import cStringIO
 import csv
 import logging
 import os
+import smtplib
 import string
 import time
 import urllib2
@@ -19,7 +20,6 @@ from django.template import Context
 from django.template import Template
 from django.utils import timezone
 import pytz
-import smtplib
 
 from ddsc_core.models.alarms import Alarm
 from ddsc_core.models.alarms import Alarm_Active
