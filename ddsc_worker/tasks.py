@@ -274,7 +274,7 @@ def calculate_status():
                             tsobj = ts.get_events(start, end)
                             if tsobj.empty is False:
                                 st, cr = StatusCache.objects.get_or_create(
-                                    timeseries=ts, status_date=date_cursor)
+                                    timeseries=ts, date=date_cursor)
                                 st.set_ts_status(tsobj)
                                 st.save()
                                 logger.debug(
