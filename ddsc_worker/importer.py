@@ -370,6 +370,6 @@ def read_lmw(admFile, datFile, kwaFile):
 
 def make_file_name_unique(file_name):
     pos = file_name.find('.')
-    time_string = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    time_string = datetime.utcnow().strftime("%Y%m%d%H%M%S_%f")
     new_name = file_name[0:pos] + '_' + time_string + file_name[pos:]
     return new_name
