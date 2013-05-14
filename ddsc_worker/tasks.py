@@ -540,6 +540,7 @@ def compensation_tool():
     logger.info('[x] Calculating compensation')
     with open(f_csv, 'rb') as f:
         reader = csv.reader(f)
+        reader.next()
         for row in reader:
             water_pr_id = row[0]
             air_pr_id = row[1]
