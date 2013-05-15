@@ -314,6 +314,8 @@ def alarm_trigger():
             time_diff_sec = abs(time_diff.total_seconds())
         else:
             time_diff_sec = 9999999
+            alm.last_checked = timezone.now() - timedelta(9999)
+            alm.save()
         alarm_or_not = []
         if (alm != [] and time_diff_sec > alm.frequency * 60):
             logger.info('executing, alarm name: %r' % alm.name)
