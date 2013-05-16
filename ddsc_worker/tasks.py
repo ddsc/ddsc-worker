@@ -334,126 +334,137 @@ def alarm_trigger():
                             % ts.latest_value_timestamp)
                         logger.debug('alarm_last_checked timestamp: %r'
                             % alm.last_checked)
-                        if ts.latest_value_timestamp + timelag > \
-                            (alm.last_checked):
-                            logger.debug('checking timeseries: %r' %
-                                ts.uuid + 'within alarm item id %r' %
-                                alm_itm.id)
-                            logger.debug('comparison type is:'
-                                + '%r' % alm_itm.comparision)
-                            logger.debug('comparison value type is: '
-                                + '%r' % alm_itm.value_type)
-                            list_ts_info += 'Timeseries: ' + ts.name + \
-                                ' \t' + \
-                                'at ' + ts.latest_value_timestamp.\
-                                strftime('%Y-%m-%d %H:%M:%S (UTC)') + ' \t' +\
-                                'value:' + str(ts.latest_value_number) +\
-                                 ' \t' + 'threshold:' + \
-                                 str(alm_itm.value_double) + '\n'
-                            if alm_itm.value_type == Alarm_Item.ValueType\
-                                                         .LATEST_VALUE:
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                      alm_itm.value_double,
-                                      ts.latest_value_number)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .NR_MEASUR:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                nr_measur = st_cache.nr_of_measurements_total
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_int, nr_measur)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .PR_RELIABLE:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                nr_reliable = st_cache\
-                                                  .nr_of_measurements_reliable
-                                nr_measur = st_cache.nr_of_measurements_total
-                                pr_reliable = nr_reliable / nr_measur * 100
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, pr_reliable)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .PR_DOUBTFUL:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                nr_doubtful = st_cache\
-                                              .nr_of_measurements_doubtful
-                                nr_measur = st_cache.nr_of_measurements_total
-                                pr_doubtful = nr_doubtful / nr_measur * 100
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, pr_doubtful)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .PR_UNRELIABLE:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                nr_unreliable = st_cache\
-                                                .nr_of_measurements_unreliable
-                                nr_measur = st_cache.nr_of_measurements_total
-                                pr_unreliable = nr_unreliable / nr_measur * 100
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
+                        if ts.latest_value_timestamp is not None:
+                            if ts.latest_value_timestamp + timelag > \
+                                (alm.last_checked):
+                                logger.debug('checking timeseries: %r' %
+                                    ts.uuid + 'within alarm item id %r' %
+                                    alm_itm.id)
+                                logger.debug('comparison type is:'
+                                    + '%r' % alm_itm.comparision)
+                                logger.debug('comparison value type is: '
+                                    + '%r' % alm_itm.value_type)
+                                list_ts_info += 'Timeseries: ' + ts.name + \
+                                    ' \t' + \
+                                    'at ' + ts.latest_value_timestamp.\
+                                    strftime('%Y-%m-%d %H:%M:%S (UTC)') +\
+                                    ' \t' + 'value:' +\
+                                    str(ts.latest_value_number) +\
+                                     ' \t' + 'threshold:' + \
+                                    str(alm_itm.value_double) + '\n'
+                                if alm_itm.value_type == Alarm_Item.ValueType\
+                                                             .LATEST_VALUE:
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                          alm_itm.value_double,
+                                          ts.latest_value_number)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.NR_MEASUR:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    nr_measur = st_cache\
+                                        .nr_of_measurements_total
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_int, nr_measur)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.PR_RELIABLE:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    nr_reliable = st_cache\
+                                        .nr_of_measurements_reliable
+                                    nr_measur = st_cache\
+                                        .nr_of_measurements_total
+                                    pr_reliable = nr_reliable / nr_measur * 100
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, pr_reliable)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.PR_DOUBTFUL:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    nr_doubtful = st_cache\
+                                                  .nr_of_measurements_doubtful
+                                    nr_measur = st_cache\
+                                        .nr_of_measurements_total
+                                    pr_doubtful = nr_doubtful / nr_measur * 100
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, pr_doubtful)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.PR_UNRELIABLE:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    nr_unreliable = st_cache\
+                                        .nr_of_measurements_unreliable
+                                    nr_measur = st_cache\
+                                        .nr_of_measurements_total
+                                    pr_unreliable = nr_unreliable / nr_measur\
+                                        * 100
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
                                         alm_itm.value_double, pr_unreliable)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .MIN_MEASUR:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                min_measur = st_cache.min_val
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, min_measur)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .MAX_MEASUR:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                max_measur = st_cache.max_val
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, max_measur)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .AVG_MEASUR:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                avg_measur = st_cache.mean_val
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, avg_measur)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                           .STD_MEASUR:
-                                st_cache = ts.statuscache_set.latest('pk')
-                                std_measur = st_cache.std_val
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_double, std_measur)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                       .TIME_SINCE_LAST_MEASUR:
-                                time_diff = timezone.now() -\
-                                                ts.latest_value_timestamp
-                                time_diff_sec = int(time_diff.total_seconds())
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
-                                        alm_itm.value_int, time_diff_sec)
-                                )
-                            elif alm_itm.value_type == Alarm_Item.ValueType\
-                                                    .PR_DEV_EXPECTED_NR_MEASUR:
-                                nr_measur = st_cache.nr_of_measurements_total
-                                nr_expected_measur = alm_itm.value_int
-                                pr_expected_deviation = alm_itm.value_double
-                                deviation = abs(nr_measur - nr_expected_measur)
-                                pr_deviation = float(deviation) /\
-                                                   nr_expected_measur
-                                alarm_or_not_item.append(
-                                    compare(alm_itm.comparision,
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.MIN_MEASUR:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    min_measur = st_cache.min_val
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, min_measur)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.MAX_MEASUR:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    max_measur = st_cache.max_val
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, max_measur)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.AVG_MEASUR:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    avg_measur = st_cache.mean_val
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, avg_measur)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.STD_MEASUR:
+                                    st_cache = ts.statuscache_set.latest('pk')
+                                    std_measur = st_cache.std_val
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_double, std_measur)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.TIME_SINCE_LAST_MEASUR:
+                                    time_diff = timezone.now() -\
+                                                    ts.latest_value_timestamp
+                                    time_diff_sec = int(
+                                        time_diff.total_seconds())
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
+                                            alm_itm.value_int, time_diff_sec)
+                                    )
+                                elif alm_itm.value_type == Alarm_Item\
+                                    .ValueType.PR_DEV_EXPECTED_NR_MEASUR:
+                                    nr_measur = st_cache\
+                                        .nr_of_measurements_total
+                                    nr_expected_measur = alm_itm.value_int
+                                    pr_expected_deviation = alm_itm\
+                                        .value_double
+                                    deviation = abs(
+                                        nr_measur - nr_expected_measur)
+                                    pr_deviation = float(deviation) /\
+                                                       nr_expected_measur
+                                    alarm_or_not_item.append(
+                                        compare(alm_itm.comparision,
                                         pr_expected_deviation, pr_deviation)
-                                )
-                        else:
-                            logger.debug('current alarm item has'
-                                ' already been checked')
+                                    )
+                            else:
+                                logger.debug('current alarm item has'
+                                    ' already been checked')
                 if alarm_or_not_item != []:
                     ds = decision(alarm_or_not_item,
                         logical_check_item)
