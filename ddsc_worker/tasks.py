@@ -536,8 +536,8 @@ def compare(x, y, z):
     return {
         1: y == z,
         2: y != z,
-        3: y > z,
-        4: y < z,
+        3: y < z,
+        4: y > z,
     }.get(x, 'error')
 
 
