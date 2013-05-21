@@ -344,21 +344,22 @@ def alarm_trigger():
                                     + '%r' % alm_itm.comparision)
                                 logger.debug('comparison value type is: '
                                     + '%r' % alm_itm.value_type)
-                                list_ts_info += 'Timeseries: ' + ts.name + \
-                                    ' \t' + \
-                                    'at ' + ts.latest_value_timestamp.\
-                                    strftime('%Y-%m-%d %H:%M:%S (UTC)') +\
-                                    ' \t' + 'value:' +\
-                                    str(ts.latest_value_number) +\
-                                     ' \t' + 'threshold:' + \
-                                    str(alm_itm.value_double) + '\n'
                                 if alm_itm.value_type == Alarm_Item.ValueType\
                                                              .LATEST_VALUE:
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                          alm_itm.value_double,
-                                          ts.latest_value_number)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double,
+                                        ts.latest_value_number)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries: ' + \
+                                            ts.name + ' \t' + \
+                                            'at ' + ts.latest_value_timestamp.\
+                                            strftime(
+                                                '%Y-%m-%d %H:%M:%S (UTC)') + \
+                                            ' \t' + 'value:' +\
+                                            str(ts.latest_value_number) +\
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.NR_MEASUR:
                                     st_cache = ts.statuscache_set.latest('pk')
