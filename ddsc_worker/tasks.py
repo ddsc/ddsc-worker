@@ -528,8 +528,8 @@ def alarm_trigger():
                                             'Time elapse since last ' + \
                                             'measurement:' + \
                                             str(time_diff_sec) + ' Sec' + \
-                                            ' \t' + 'threshold:' + \
-                                            str(alm_itm.value_int) + ' Sec \n'
+                                            ' \t' + 'threshold:' + 'Sec' + \
+                                            str(alm_itm.value_int) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_DEV_EXPECTED_NR_MEASUR:
                                     nr_measur = st_cache\
@@ -670,16 +670,43 @@ def compensation_tool():
                             'current compensation-related' +
                             ' time series does not exsist')
 
+            if ts_waterHt.first_value_timestamp is None:
+                ts_waterHt.first_value_timestamp = timezone.now() - \
+                    timedelta(9999)
+                ts_waterHt.save()
+            if ts_waterHt.latest_value_timestamp is None:
+                ts_waterHt.latest_value_timestamp = \
+                    ts_waterHt.first_value_timestamp + timedelta(1)
+                ts_waterHt.latest_value_number = 0
+                ts_waterHt.save()
+
+            if ts_waterDpt.first_value_timestamp is None:
+                ts_waterDpt.first_value_timestamp = timezone.now() - \
+                    timedelta(9999)
+                ts_waterDpt.save()
+            if ts_waterDpt.latest_value_timestamp is None:
+                ts_waterDpt.latest_value_timestamp = \
+                    ts_waterHt.first_value_timestamp + timedelta(1)
+                ts_waterDpt.latest_value_number = 0
+                ts_waterDpt.save()
+
             if ts_waterHt.latest_value_timestamp <\
                 ts_waterPr.latest_value_timestamp or\
                 ts_waterDpt.latest_value_timestamp <\
                 ts_waterPr.latest_value_timestamp:
 
-                if (timezone.now() - max_timeDiff) <\
-                    ts_air_pr.latest_value_timestamp:
-                    water_pr = ts_waterPr.latest_value_number
-                    air_pr = ts_air_pr.latest_value_number
-
+                water_pr = ts_waterPr.latest_value_number
+                start_air_timestamp = \
+                    ts_waterPr.latest_value_timestamp - max_timeDiff
+                end_air_timestamp = \
+                    ts_waterPr.latest_value_timestamp + timedelta(0, 1)
+                tsobj_airpr = ts_air_pr.get_events(start_air_timestamp,
+                    end_air_timestamp)
+                try:
+                    air_pr = tsobj_airpr['value'][-1]
+                except:
+                    air_pr = None
+                if air_pr is not None:
                     if ref_ht == '':
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
@@ -689,7 +716,6 @@ def compensation_tool():
                             'reference hight unit is not indicated')
                     else:
                         ref_ht = float(ref_ht)
-
                     if cable_len == '':
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
@@ -698,7 +724,6 @@ def compensation_tool():
                         raise Exception('cable length is not indicated')
                     else:
                         cable_len = float(cable_len)
-
                     if correction == '':
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
@@ -708,7 +733,6 @@ def compensation_tool():
                             'correction value is not indicated')
                     else:
                         correction = float(correction)
-
                     if ts_air_pr.unit != Unit.objects.get(code='mbar'):
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
@@ -721,7 +745,6 @@ def compensation_tool():
                         compensation_tool.apply_async((),
                             queue='ddsc.failures')
                         raise Exception('water height unit is not meter')
-
                     A = ref_ht
                     B = cable_len
                     C = correction
