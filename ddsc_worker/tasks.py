@@ -528,8 +528,8 @@ def alarm_trigger():
                                             'Time elapse since last ' + \
                                             'measurement:' + \
                                             str(time_diff_sec) + ' Sec' + \
-                                            ' \t' + 'threshold:' + 'Sec' + \
-                                            str(alm_itm.value_int) + '\n'
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_int) + ' Sec \n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_DEV_EXPECTED_NR_MEASUR:
                                     nr_measur = st_cache\
