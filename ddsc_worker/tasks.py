@@ -365,10 +365,19 @@ def alarm_trigger():
                                     st_cache = ts.statuscache_set.latest('pk')
                                     nr_measur = st_cache\
                                         .nr_of_measurements_total
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_int, nr_measur)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_int, nr_measur)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Number of measurements:' + \
+                                            str(nr_measur) + \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_RELIABLE:
                                     st_cache = ts.statuscache_set.latest('pk')
@@ -377,10 +386,19 @@ def alarm_trigger():
                                     nr_measur = st_cache\
                                         .nr_of_measurements_total
                                     pr_reliable = nr_reliable / nr_measur * 100
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, pr_reliable)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, pr_reliable)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Reliable measurements:' + \
+                                            str(pr_reliable) + '%' \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '% \n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_DOUBTFUL:
                                     st_cache = ts.statuscache_set.latest('pk')
@@ -389,10 +407,19 @@ def alarm_trigger():
                                     nr_measur = st_cache\
                                         .nr_of_measurements_total
                                     pr_doubtful = nr_doubtful / nr_measur * 100
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, pr_doubtful)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, pr_doubtful)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Doubtful measurements:' + \
+                                            str(pr_doubtful) + '%' \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '% \n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_UNRELIABLE:
                                     st_cache = ts.statuscache_set.latest('pk')
@@ -402,52 +429,107 @@ def alarm_trigger():
                                         .nr_of_measurements_total
                                     pr_unreliable = nr_unreliable / nr_measur\
                                         * 100
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
+                                    temp_deci = compare(alm_itm.comparision,
                                         alm_itm.value_double, pr_unreliable)
-                                    )
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Unreliable measurements:' + \
+                                            str(pr_unreliable) + '%' \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '% \n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.MIN_MEASUR:
                                     st_cache = ts.statuscache_set.latest('pk')
                                     min_measur = st_cache.min_val
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, min_measur)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, min_measur)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Minimal measurements:' + \
+                                            str(min_measur) + \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.MAX_MEASUR:
                                     st_cache = ts.statuscache_set.latest('pk')
                                     max_measur = st_cache.max_val
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, max_measur)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, max_measur)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Maximal measurements:' + \
+                                            str(max_measur) + \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.AVG_MEASUR:
                                     st_cache = ts.statuscache_set.latest('pk')
                                     avg_measur = st_cache.mean_val
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, avg_measur)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, avg_measur)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Mean measurements:' + \
+                                            str(avg_measur) + \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.STD_MEASUR:
                                     st_cache = ts.statuscache_set.latest('pk')
                                     std_measur = st_cache.std_val
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_double, std_measur)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_double, std_measur)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'STD of measurements:' + \
+                                            str(std_measur) + \
+                                            ' \t' + 'threshold:' + \
+                                            str(alm_itm.value_double) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.TIME_SINCE_LAST_MEASUR:
                                     time_diff = timezone.now() -\
                                                     ts.latest_value_timestamp
                                     time_diff_sec = int(
                                         time_diff.total_seconds())
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
-                                            alm_itm.value_int, time_diff_sec)
-                                    )
+                                    temp_deci = compare(alm_itm.comparision,
+                                        alm_itm.value_int, time_diff_sec)
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Time elapse since last ' + \
+                                            'measurement:' + \
+                                            str(time_diff_sec) + ' Sec' + \
+                                            ' \t' + 'threshold:' + 'Sec' + \
+                                            str(alm_itm.value_int) + '\n'
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_DEV_EXPECTED_NR_MEASUR:
                                     nr_measur = st_cache\
@@ -459,10 +541,20 @@ def alarm_trigger():
                                         nr_measur - nr_expected_measur)
                                     pr_deviation = float(deviation) /\
                                                        nr_expected_measur
-                                    alarm_or_not_item.append(
-                                        compare(alm_itm.comparision,
+                                    temp_deci = compare(alm_itm.comparision,
                                         pr_expected_deviation, pr_deviation)
-                                    )
+                                    alarm_or_not_item.append(temp_deci)
+                                    if temp_deci is True:
+                                        list_ts_info += 'Timeseries_status: ' \
+                                            + ts.name + ' \t' + \
+                                            'on ' + st_cache.date.\
+                                            strftime(
+                                                '%Y-%m-%d (UTC)') + ' \t' + \
+                                            'Deviation from the expected ' + \
+                                            'nr of measurements:' + \
+                                            str(pr_deviation) + '%' + \
+                                            ' \t' + 'threshold:' + '%' + \
+                                            str(pr_expected_deviation) + '\n'
                             else:
                                 logger.debug('current alarm item has'
                                     ' already been checked')
