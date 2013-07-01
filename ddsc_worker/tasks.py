@@ -326,6 +326,8 @@ def alarm_trigger():
                     try:
                         ts_series = alm_itm.content_object.timeseries.all()
                     except:
+                        if alm_itm.content_object is None:
+                            continue
                         ts_series = [alm_itm.content_object]
                     logical_check_item = alm_itm.logical_check
                     alarm_or_not_item = []
