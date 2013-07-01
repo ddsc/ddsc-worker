@@ -365,10 +365,12 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.NR_MEASUR:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         nr_measur = st_cache\
                                             .nr_of_measurements_total
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_int, nr_measur)
                                     except:
                                         temp_deci = False
@@ -386,13 +388,16 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_RELIABLE:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         nr_reliable = st_cache\
                                             .nr_of_measurements_reliable
                                         nr_measur = st_cache\
                                             .nr_of_measurements_total
-                                        pr_reliable = nr_reliable / nr_measur * 100
-                                        temp_deci = compare(alm_itm.comparision,
+                                        pr_reliable = nr_reliable /\
+                                            nr_measur * 100
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, pr_reliable)
                                     except:
                                         temp_deci = False
@@ -410,13 +415,16 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_DOUBTFUL:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         nr_doubtful = st_cache\
-                                                      .nr_of_measurements_doubtful
+                                            .nr_of_measurements_doubtful
                                         nr_measur = st_cache\
                                             .nr_of_measurements_total
-                                        pr_doubtful = nr_doubtful / nr_measur * 100
-                                        temp_deci = compare(alm_itm.comparision,
+                                        pr_doubtful = nr_doubtful /\
+                                            nr_measur * 100
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, pr_doubtful)
                                     except:
                                         temp_deci = False
@@ -434,15 +442,18 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.PR_UNRELIABLE:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         nr_unreliable = st_cache\
                                             .nr_of_measurements_unreliable
                                         nr_measur = st_cache\
                                             .nr_of_measurements_total
-                                        pr_unreliable = nr_unreliable / nr_measur\
-                                            * 100
-                                        temp_deci = compare(alm_itm.comparision,
-                                            alm_itm.value_double, pr_unreliable)
+                                        pr_unreliable = nr_unreliable /\
+                                            nr_measur * 100
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
+                                            alm_itm.value_double,
+                                            pr_unreliable)
                                     except:
                                         temp_deci = False
                                     alarm_or_not_item.append(temp_deci)
@@ -459,9 +470,11 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.MIN_MEASUR:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         min_measur = st_cache.min_val
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, min_measur)
                                     except:
                                         temp_deci = False
@@ -479,9 +492,11 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.MAX_MEASUR:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         max_measur = st_cache.max_val
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, max_measur)
                                     except:
                                         temp_deci = False
@@ -499,9 +514,11 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.AVG_MEASUR:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         avg_measur = st_cache.mean_val
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, avg_measur)
                                     except:
                                         temp_deci = False
@@ -519,9 +536,11 @@ def alarm_trigger():
                                 elif alm_itm.value_type == Alarm_Item\
                                     .ValueType.STD_MEASUR:
                                     try:
-                                        st_cache = ts.statuscache_set.latest('pk')
+                                        st_cache = ts.statuscache_set.latest(
+                                            'pk')
                                         std_measur = st_cache.std_val
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_double, std_measur)
                                     except:
                                         temp_deci = False
@@ -540,10 +559,11 @@ def alarm_trigger():
                                     .ValueType.TIME_SINCE_LAST_MEASUR:
                                     try:
                                         time_diff = timezone.now() -\
-                                                        ts.latest_value_timestamp
+                                            ts.latest_value_timestamp
                                         time_diff_sec = int(
                                             time_diff.total_seconds())
-                                        temp_deci = compare(alm_itm.comparision,
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
                                             alm_itm.value_int, time_diff_sec)
                                     except:
                                         temp_deci = False
@@ -571,8 +591,10 @@ def alarm_trigger():
                                             nr_measur - nr_expected_measur)
                                         pr_deviation = float(deviation) /\
                                                            nr_expected_measur
-                                        temp_deci = compare(alm_itm.comparision,
-                                            pr_expected_deviation, pr_deviation)
+                                        temp_deci = compare(
+                                            alm_itm.comparision,
+                                            pr_expected_deviation,
+                                            pr_deviation)
                                     except:
                                         temp_deci = False
                                     alarm_or_not_item.append(temp_deci)
