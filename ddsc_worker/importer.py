@@ -28,6 +28,12 @@ gs_setting = getattr(settings, 'IMPORTER_GEOSERVER')
 def data_convert(src):
     try:
         logger.debug("[x] converting %r to pandas object", src)
+        # Half the time read_csv fails with: "IndexError: list index out of
+        # range". Quite bizar, but asking for some file metadata first,
+        # e.g. the file size, seems to solve the problem. Performing
+        # a sleep does not solve the problem. Something fishy about
+        # accessing a file on a mounted Windows share from Ubuntu?
+        logger.debug("%s is %d bytes", src, os.path.getsize(src))
         tsOBJ = read_csv(
             src, index_col=0,
             parse_dates=True,

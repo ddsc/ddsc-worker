@@ -177,7 +177,6 @@ def new_socket_detected(pathDir, fileName):
 
         logger.info('[x] start importing: %r', src)
         logger.info('By User: %r', usr.username)
-        #time.sleep(5)  # why sleep?
         import_csv(src, usr.id)
     except Exception, e:
         logger.error("Unable to process socket data %s", src, exc_info=True)
