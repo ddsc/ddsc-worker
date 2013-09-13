@@ -157,11 +157,12 @@ def new_file_detected(pathDir, fileName):
             import_pi_xml(src, usr.id)
         else:
             file_ignored(src, fileExtension)
-    except:
+    except Exception, e:
+        logger.error("Unable to process new file %s", src, exc_info=True)
         x = pd['storage_base_path'] + pd['rejected_file']
         y = fileName
         new_file_detected.apply_async((x, y), queue='ddsc.failures')
-        raise Exception('task has been requeued to ddsc-failure')
+        raise e
 
 
 @celery.task
