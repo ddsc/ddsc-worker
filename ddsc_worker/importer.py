@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
 from ddsc_worker.import_auth import get_timestamp_by_filename
-
+from ddsc_worker.geoserver.catalog import Catalog
 logger = logging.getLogger(__name__)
 
 pd = getattr(settings, 'IMPORTER_PATH')
@@ -164,6 +164,7 @@ def import_geotiff(src, filename, dst, usr_id):
     timestamp = get_timestamp_by_filename(filename)
 
     remoteid = get_remoteid_by_filename(filename)
+    filename_without_ext =  filename.replace('.geotiff', '')
     ts = get_auth(usr, remoteid)
 
     logger.debug("[x] publishing %r into GeoServer..." % src)
@@ -172,38 +173,29 @@ def import_geotiff(src, filename, dst, usr_id):
         str_year = str(timestamp.year[0])
         str_month = str(timestamp.month[0])
         str_day = str(timestamp.day[0])
-        store_dst = dst + ts.name + '/' +\
-            str_year + '-' + str_month + '-' + str_day + '/'
+        store_dst = dst + ts.name + '/' + \
+        str_year + '-' + str_month + '-' + str_day + '/'
 
-        gs_lyer_name = filename.replace('.zip', '')
-        gs_store_name = gs_lyer_name
-        gs_lyer_grp_name = ts.name + "_" + str_year + '-' +\
-            str_month + '-' + str_day
-        gs_workspc_name = gs_setting['geoserver_workspace']
+        cat = Catalog(gs_setting['geoserver_url'] + '/rest')
+        cat.username = gs_setting['geoserver_username']
+        cat.password = gs_setting['geoserver_password']
+        workspace = cat.get_workspace(gs_setting['geoserver_workspace'])
+        if workspace == None:
+            cat.create_workspace(gs_setting['geoserver_workspace'], gs_setting['geoserver_workspace'])
 
-        values = {"value": gs_lyer_grp_name}
-
-        hao = call(['java', '-jar',
-            gs_setting['geoserver_jar_pusher'],
-            src, gs_setting['geoserver_url'],
-            gs_setting['geoserver_username'],
-            gs_setting['geoserver_password'],
-            gs_workspc_name,
-            gs_store_name,
-            gs_lyer_grp_name])
-
-        if hao == 0:
-            logger.debug("[x] Published %r to GeoServer " % src)
-            ts.set_event(timestamp[0], values)
-            ts.save()
+        try:
             data_move(src, store_dst)
-            logger.info(
-                "[x] File:--%r-- has been successfully imported" % src)
-        else:
-            logger.debug("[x] Publishing error")
-            logger.error('[x] File:--%r-- has been rejected' % src)
+            store = cat.create_coveragestore(filename_without_ext, store_dst + filename, workspace, True)
+        except Exception, e:
             data_move(src, ERROR_file)
-            raise Exception("[x] %r _FAILED to be imported" % src)
+            logger.error('[x] File:--%r-- has been filed to publish' % src)
+            raise Exception("[x] %r _FAILED to be imported" % src + ' reason--%r' % e )
+
+        values = {"value": filename_without_ext}
+        logger.debug("[x] Published %r to GeoServer " % src)
+        ts.set_event(timestamp[0], values)
+        ts.save()
+        logger.info("[x] File:--%r-- has been successfully imported" % src)
     else:
         logger.error('[x] File:--%r-- has been rejected' % src)
         data_move(src, ERROR_file)
