@@ -42,8 +42,6 @@ IMPORTER_PATH = {
 }
 
 IMPORTER_GEOSERVER = {
-    'geoserver_jar_pusher':  # where is the geotif_pub.jar file
-        '/opt/ddsc-worker/ddsc_worker/geotif_pub.jar',
     'geoserver_url':
         'http://p-ddsc-map-d1:8080/geoserver',
     'geoserver_username':
