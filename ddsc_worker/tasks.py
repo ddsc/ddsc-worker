@@ -146,7 +146,7 @@ def new_file_detected(pathDir, fileName):
         elif fileExtension == ".pdf":
             dst = pd['storage_base_path'] + pd['file']
             import_file(pathDir, fileName, dst, usr.id)
-        elif (fileExtension == ".zip"):
+        elif (fileExtension == ".geotiff"):
             dst = pd['storage_base_path'] + pd['geotiff']
             import_geotiff(pathDir, fileName, dst, usr.id)
         elif (fileExtension == ".xml"):
