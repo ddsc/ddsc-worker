@@ -176,9 +176,10 @@ def import_geotiff(src, filename, dst, usr_id):
         store_dst = dst + ts.name + '/' + \
         str_year + '-' + str_month + '-' + str_day + '/'
 
-        cat = Catalog(gs_setting['geoserver_url'] + '/rest')
-        cat.username = gs_setting['geoserver_username']
-        cat.password = gs_setting['geoserver_password']
+        cat = Catalog(gs_setting['geoserver_url'] + '/rest', 
+            gs_setting['geoserver_username'], 
+            gs_setting['geoserver_password'], True)
+            
         workspace = cat.get_workspace(gs_setting['geoserver_workspace'])
         if workspace == None:
             cat.create_workspace(gs_setting['geoserver_workspace'], gs_setting['geoserver_workspace'])
