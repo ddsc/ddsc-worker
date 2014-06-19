@@ -5,13 +5,13 @@ import logging
 
 from django.contrib.auth.models import User
 import pandas
+import dateutil
 
 from ddsc_core.auth import PERMISSION_CHANGE
 from ddsc_core.models.models import IdMapping
 from ddsc_core.models.models import Timeseries
 from ddsc_core.models.system import Folder
 from ddsc_core.models.system import IPAddress
-
 
 logger = logging.getLogger(__name__)
 
@@ -94,5 +94,6 @@ def get_timestamp_by_filename(filename):
         f2 = f2 = filename.find(".", f1 + 1)
 
     tmstmp = filename[f1 + 1:f2]
-    timestamp = pandas.date_range(tmstmp, periods=1)
+    timestamp = pandas.date_range(tmstmp, periods=1, tz=dateutil.tz.tzutc())
+    
     return timestamp
