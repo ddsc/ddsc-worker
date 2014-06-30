@@ -163,9 +163,9 @@ def import_geotiff(src, filename, dst, usr_id):
     logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
-    remoteid = get_remoteid_by_filename(filename)
+    uuid = get_remoteid_by_filename(filename)
     filename_without_ext =  filename.replace('.geotiff', '')
-    ts = get_auth(usr, remoteid)
+    ts = get_auth(usr, uuid)
 
     logger.debug("[x] publishing %r into GeoServer..." % src)
 
@@ -173,7 +173,7 @@ def import_geotiff(src, filename, dst, usr_id):
         str_year = str(timestamp.year[0])
         str_month = str(timestamp.month[0])
         str_day = str(timestamp.day[0])
-        store_dst = dst + ts.name + '/' + \
+        store_dst = dst + uuid + '/' + \
         str_year + '-' + str_month + '-' + str_day + '/'
 
         cat = Catalog(gs_setting['geoserver_url'] + '/rest', 
@@ -186,13 +186,15 @@ def import_geotiff(src, filename, dst, usr_id):
 
         try:
             data_move(src, store_dst)
-            store = cat.create_coveragestore(filename_without_ext, store_dst + filename, workspace, True)
+            #store = cat.create_coveragestore(filename_without_ext, store_dst + filename, workspace, True)
+            create_geotiff(cat, gs_setting['geoserver_workspace'], filename_without_ext, store_dst + filename)
         except Exception, e:
             data_move(src, ERROR_file)
             logger.error('[x] File:--%r-- has been filed to publish' % src)
             raise Exception("[x] %r _FAILED to be imported" % src + ' reason--%r' % e )
 
-        values = {"value": filename_without_ext}
+        values = {"value": store_dst + filename}
+
         logger.debug("[x] Published %r to GeoServer " % src)
         ts.set_event(timestamp[0], values)
         ts.save()
@@ -372,3 +374,19 @@ def make_file_name_unique(file_name):
     time_string = datetime.utcnow().strftime("%Y%m%d%H%M%S_%f")
     new_name = file_name[0:pos] + '_' + time_string + file_name[pos:]
     return new_name
+
+
+def create_geotiff(catelog, work_space, store_name, file_path):
+     headers = {
+            "Content-type": "application/xml",
+            "Accept": "application/xml"
+     }
+     message = "url:file:" + file_path
+
+     url = catelog.service_url + "/workspaces/" +\
+         work_space + "/coveragestores/" +\
+         store_name + "/external.geotiff"
+     response, content = catelog.http.request(url, "PUT", message, headers)
+
+     if (response.status != 201):
+         raise Exception(content)
