@@ -94,6 +94,6 @@ def get_timestamp_by_filename(filename):
         f2 = f2 = filename.find(".", f1 + 1)
 
     tmstmp = filename[f1 + 1:f2]
-    timestamp = pandas.date_range(tmstmp, periods=1, tz=dateutil.tz.tzutc())
+    timestamp = pandas.date_range(tmstmp, periods=1)
     
     return timestamp
