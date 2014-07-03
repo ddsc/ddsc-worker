@@ -441,6 +441,9 @@ def create_geotiff(catalog, workspace, store_name, file_path,
     # the data supplier and is not guaranteed to be unique: a remote id
     # instead of a DDSC UUID might be used. Passing coverageName as a
     # query parameter, is a way of overriding the default behaviour.
+    # NB: the layer title still equals the name of the file, but
+    # that's ok, because it is not used in a WMS request and
+    # GeoServer does not require it to be unique.
 
     if coverage_name is not None:
         url += "?coverageName={}".format(coverage_name)
