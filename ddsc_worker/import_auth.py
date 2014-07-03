@@ -1,17 +1,17 @@
 # (c) Fugro Geoservices. MIT licensed, see LICENSE.rst.
 from __future__ import absolute_import
 
+from uuid import UUID
 import logging
 
 from django.contrib.auth.models import User
 import pandas
-import dateutil
 
 from ddsc_core.auth import PERMISSION_CHANGE
-from ddsc_core.models.models import IdMapping
-from ddsc_core.models.models import Timeseries
-from ddsc_core.models.system import Folder
-from ddsc_core.models.system import IPAddress
+from ddsc_core.models import Folder
+from ddsc_core.models import IPAddress
+from ddsc_core.models import IdMapping
+from ddsc_core.models import Timeseries
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,22 @@ def get_auth(usr, remote_id):
             (usr.username, ts.uuid)
         )
         return False
+
+
+def can_change(user, timeseries):
+    """Can user change timeseries?
+
+    Parameters
+    ----------
+    user: an instance of django.contrib.auth.models.User.
+    timeseries: an instance of ddsc_core.models.Timeseries.
+
+    Returns
+    -------
+    True or False (bool).
+
+    """
+    return user.has_perm(PERMISSION_CHANGE, timeseries)
 
 
 def get_usr_by_ip(fileName):
@@ -86,14 +102,66 @@ def get_remoteid_by_filename(filename):
 
 
 def get_timestamp_by_filename(filename):
+
+    # Tricky code? A filename is expected to have 2 underscores at most?
+    # Wouldn't a regular expression be more appropriate?
+
     f1 = filename.find("_")
 
     if filename.count("_") > 1:
         f2 = filename.find("_", f1 + 1)
     else:
-        f2 = f2 = filename.find(".", f1 + 1)
+        f2 = filename.find(".", f1 + 1)
 
     tmstmp = filename[f1 + 1:f2]
-    timestamp = pandas.date_range(tmstmp, periods=1)
-    
+
+    # Pandas does not parse the UTC timezone designator 'Z' correctly.
+    # This is solved by setting tz explicitly. No timezone designator
+    # is implictly regarded as UTC. Other timezone designators are
+    # not (yet) supported.
+
+    if tmstmp.endswith('Z'):
+        tmstmp = tmstmp[:-1]
+
+    timestamp = pandas.date_range(tmstmp, periods=1, tz='UTC')
+
     return timestamp
+
+
+def get_timeseries_by_filename(filename, user):
+    """Return the timeseries corresponding to filename.
+
+    Uploaded files may either start with a remote id or a UUID.
+    Assumption: remote ids must not contain any underscores.
+
+    Parameters
+    ----------
+    filename (str): a file name.
+    user (django.contrib.auth.models.User): the person that uploaded this file.
+
+    Returns
+    -------
+    A ddsc_core.models.Timeseries object (or None if there is no match).
+
+    """
+    ID = filename.split('_')[0]
+
+    # A remote id can be anything, including a UUID,
+    # so this check should be done first:
+
+    try:
+        obj = IdMapping.objects.get(user=user, remote_id=ID)
+        return obj.timeseries
+    except IdMapping.DoesNotExist:
+        pass
+
+    # Check if a DDSC UUID was used:
+
+    try:
+        uuid = UUID(ID)
+        return Timeseries.objects.get(uuid=uuid)
+    except (ValueError, Timeseries.DoesNotExist):
+        pass
+
+    logger.error(
+        "Cannot map %s onto a timeseries for user %s.", filename, user)

@@ -1,22 +1,24 @@
 # (c) Fugro GeoServices. MIT licensed, see LICENSE.rst.
 from __future__ import absolute_import
 
-from subprocess import call
 import logging
 import os
 import shutil
 
+from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
-from pandas.io.parsers import read_csv
 from pandas import DataFrame
+from pandas.io.parsers import read_csv
 from tslib.readers import PiXmlReader
-from datetime import datetime, timedelta
 
+from ddsc_worker.geoserver.catalog import Catalog
+from ddsc_worker.import_auth import can_change
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
+from ddsc_worker.import_auth import get_timeseries_by_filename
 from ddsc_worker.import_auth import get_timestamp_by_filename
-from ddsc_worker.geoserver.catalog import Catalog
+
 logger = logging.getLogger(__name__)
 
 pd = getattr(settings, 'IMPORTER_PATH')
@@ -99,7 +101,8 @@ def import_csv(src, usr_id):
     if str(auth_tag) == nr:
         logger.error('[x] File:--%r-- has been fully rejected' % src)
         data_move(src, ERROR_file)
-        raise Exception("[x] In : %r  All of the timeseries failed"
+        raise Exception(
+            "[x] In : %r  All of the timeseries failed"
             " to be imported because of auth" % (src))
     elif auth_tag == 0:
         data_move(src, OK_file)
@@ -107,7 +110,8 @@ def import_csv(src, usr_id):
     else:
         data_move(src, ERROR_file)
         logger.warning('[x] File:--%r-- has been only partly imported' % src)
-        raise Exception("[x] In : %r  Some of the timeseries failed"
+        raise Exception(
+            "[x] In : %r  Some of the timeseries failed"
             " to be imported because of auth" % (src))
 
 
@@ -132,6 +136,9 @@ def import_file(src, filename, dst, usr_id):
     logger.debug("[x] Importing %r to DB" % filename)
     timestamp = get_timestamp_by_filename(filename)
 
+    # TODO: Shaoqing: remoteid is not guaranteed to be unique.
+    # It was chosen by the supplier of the data. IMHO you
+    # should use the uuid.
     remoteid = get_remoteid_by_filename(filename)
     ts = get_auth(usr, remoteid)
 
@@ -148,61 +155,92 @@ def import_file(src, filename, dst, usr_id):
         ts.save()
         data_move(src + filename, store_dst)
         logger.info(
-            '[x] File:--%r-- has been successfully imported' % (src +
-            filename))
+            '[x] File:--%r-- has been successfully imported',
+            src + filename)
     else:
         logger.error('[x] File:--%r-- has been rejected' % (src + filename))
         data_move(src + filename, ERROR_file)
         raise Exception("[x] %r _FAILED to be imported" % (src + filename))
 
 
-def import_geotiff(src, filename, dst, usr_id):
+def import_geotiff(dirname, filename, dst, usr_id):
+
     usr = User.objects.get(pk=usr_id)
-    src = src + filename
+    ts = get_timeseries_by_filename(filename, usr)
+    src = os.path.join(dirname, filename)
 
-    logger.debug("[x] Importing %r to DB" % filename)
-    timestamp = get_timestamp_by_filename(filename)
+    # Check permissions.
 
-    uuid = get_remoteid_by_filename(filename)
-    filename_without_ext =  filename.replace('.geotiff', '')
-    ts = get_auth(usr, uuid)
-
-    logger.debug("[x] publishing %r into GeoServer..." % src)
-
-    if ts is not False:
-        str_year = str(timestamp.year[0])
-        str_month = str(timestamp.month[0])
-        str_day = str(timestamp.day[0])
-        store_dst = dst + uuid + '/' + \
-        str_year + '-' + str_month + '-' + str_day + '/'
-
-        cat = Catalog(gs_setting['geoserver_url'] + '/rest', 
-            gs_setting['geoserver_username'], 
-            gs_setting['geoserver_password'], True)
-            
-        workspace = cat.get_workspace(gs_setting['geoserver_workspace'])
-        if workspace == None:
-            cat.create_workspace(gs_setting['geoserver_workspace'], gs_setting['geoserver_workspace'])
-
-        try:
-            data_move(src, store_dst)
-            #store = cat.create_coveragestore(filename_without_ext, store_dst + filename, workspace, True)
-            create_geotiff(cat, gs_setting['geoserver_workspace'], filename_without_ext, store_dst + filename)
-        except Exception, e:
-            data_move(src, ERROR_file)
-            logger.error('[x] File:--%r-- has been filed to publish' % src)
-            raise Exception("[x] %r _FAILED to be imported" % src + ' reason--%r' % e )
-
-        values = {"value": store_dst + filename}
-
-        logger.debug("[x] Published %r to GeoServer " % src)
-        ts.set_event(timestamp[0], values)
-        ts.save()
-        logger.info("[x] File:--%r-- has been successfully imported" % src)
-    else:
-        logger.error('[x] File:--%r-- has been rejected' % src)
+    if not can_change(usr, ts):
+        logger.error("[x] File:--%r-- has been rejected", src)
         data_move(src, ERROR_file)
         raise Exception("[x] %r _FAILED to be imported" % src)
+
+    # Move file to its permanent location.
+
+    timestamp = get_timestamp_by_filename(filename)  # pandas DatetimeIndex
+
+    str_date = "{:4d}-{:02d}-{:02d}".format(
+        timestamp.year[0].item(),
+        timestamp.month[0].item(),
+        timestamp.day[0].item()
+    )
+
+    store_dst = os.path.join(dst, ts.uuid, str_date)
+    data_move(src, store_dst)
+
+    # Save into database.
+
+    try:
+        src = os.path.join(store_dst, filename)
+        logger.debug("[x] Importing %r into DB", src)
+        values = {"value": src}
+        ts.set_event(timestamp[0], values)
+        ts.save()
+        logger.info("[x] File:--%r-- has been successfully imported", src)
+    except Exception, e:
+        logger.error("[x] File:--%r-- failed to be imported", src)
+        data_move(src, ERROR_file)
+        raise Exception(
+            "[x] %r _FAILED to be imported" % src + ' reason--%r' % e)
+
+    try:
+        logger.debug("[x] Publishing %r to GeoServer", src)
+        cat = Catalog(
+            gs_setting['geoserver_url'] + '/rest',
+            gs_setting['geoserver_username'],
+            gs_setting['geoserver_password'], True)
+
+        workspace = cat.get_workspace(gs_setting['geoserver_workspace'])
+        if workspace is None:
+            cat.create_workspace(
+                gs_setting['geoserver_workspace'],
+                gs_setting['geoserver_workspace'])
+
+        str_time = "{:02d}:{:02d}:{:02d}".format(
+            timestamp.hour[0].item(),
+            timestamp.minute[0].item(),
+            timestamp.second[0].item()
+        )
+
+        store_name = "{uuid}_{date}T{time}Z".format(
+            uuid=ts.uuid,
+            date=str_date,
+            time=str_time,
+        )
+
+        create_geotiff(
+            cat,
+            gs_setting['geoserver_workspace'],
+            store_name,
+            os.path.join(store_dst, filename)
+        )
+        logger.info("[x] Published %r to GeoServer", src)
+    except Exception, e:
+        logger.error(
+            "[x] File:--%r-- failed to be published to GeoServer", src)
+        raise Exception(
+            "[x] %r _FAILED to be published" % src + ' reason--%r' % e)
 
 
 def import_pi_xml(src, usr_id):
@@ -242,7 +280,8 @@ def import_pi_xml(src, usr_id):
 
 
 def file_ignored(src, fileExtension):
-    logger.error('[x]--Warning-- * %r' % fileExtension +
+    logger.error(
+        '[x]--Warning-- * %r' % fileExtension +
         ' FILE: %r is not acceptable' % src)
     dst = pd['storage_base_path'] + pd['rejected_file']
     data_move(src, dst)
@@ -376,17 +415,27 @@ def make_file_name_unique(file_name):
     return new_name
 
 
-def create_geotiff(catelog, work_space, store_name, file_path):
-     headers = {
-            "Content-type": "application/xml",
-            "Accept": "application/xml"
-     }
-     message = "url:file:" + file_path
+def create_geotiff(catalog, workspace, store_name, file_path):
+    """Create a GeoTIFF coverage store and layer.
 
-     url = catelog.service_url + "/workspaces/" +\
-         work_space + "/coveragestores/" +\
-         store_name + "/external.geotiff"
-     response, content = catelog.http.request(url, "PUT", message, headers)
+    The GeoTIFF is accessible to GeoServer, so only the path needs to be sent,
+    not the image itself.
 
-     if (response.status != 201):
-         raise Exception(content)
+    """
+    headers = {
+        "Content-type": "text/plain",
+        "Accept": "application/xml",
+    }
+
+    message = "file://{}".format(file_path)
+
+    url = "/".join([
+        catalog.service_url,
+        "workspaces", workspace,
+        "coveragestores", store_name,
+        "external.geotiff"])
+
+    response, content = catalog.http.request(url, "PUT", message, headers)
+
+    if (response.status != 201):
+        raise Exception(content)
