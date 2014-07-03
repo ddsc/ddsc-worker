@@ -233,7 +233,8 @@ def import_geotiff(dirname, filename, dst, usr_id):
             cat,
             gs_setting['geoserver_workspace'],
             store_name,
-            os.path.join(store_dst, filename)
+            src,
+            store_name
         )
         logger.info("[x] Published %r to GeoServer", src)
     except Exception, e:
@@ -415,7 +416,8 @@ def make_file_name_unique(file_name):
     return new_name
 
 
-def create_geotiff(catalog, workspace, store_name, file_path):
+def create_geotiff(catalog, workspace, store_name, file_path,
+                   coverage_name=None):
     """Create a GeoTIFF coverage store and layer.
 
     The GeoTIFF is accessible to GeoServer, so only the path needs to be sent,
@@ -424,7 +426,6 @@ def create_geotiff(catalog, workspace, store_name, file_path):
     """
     headers = {
         "Content-type": "text/plain",
-        "Accept": "application/xml",
     }
 
     message = "file://{}".format(file_path)
@@ -434,6 +435,15 @@ def create_geotiff(catalog, workspace, store_name, file_path):
         "workspaces", workspace,
         "coveragestores", store_name,
         "external.geotiff"])
+
+    # A coverage store as well as a layer will be created. By default, the name
+    # of the layer equals the filename. The filename, however, was chosen by
+    # the data supplier and is not guaranteed to be unique: a remote id
+    # instead of a DDSC UUID might be used. Passing coverageName as a
+    # query parameter, is a way of overriding the default behaviour.
+
+    if coverage_name is not None:
+        url += "?coverageName={}".format(coverage_name)
 
     response, content = catalog.http.request(url, "PUT", message, headers)
 
