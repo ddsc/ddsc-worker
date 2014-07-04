@@ -7,7 +7,6 @@ import csv
 import logging
 import os
 import smtplib
-import string
 import time
 import urllib2
 import zipfile
@@ -109,19 +108,20 @@ def export_pi_xml(src, dst, **options):
 @celery.task
 def new_file_detected(pathDir, fileName):
     try:
-        src = pathDir + fileName
+        src = os.path.join(pathDir, fileName)
         fileDirName, fileExtension = os.path.splitext(src)
-        fileExtension = string.lower(fileExtension)
+        fileExtension = fileExtension.lower()
 
         usr = get_usr_by_folder(pathDir)
 
         if usr == 0:
-            data_move(src, (pd['storage_base_path'] + pd['rejected_file']))
+            data_move(src, os.path.join(
+                pd['storage_base_path'], pd['rejected_file']))
             logger.error('[x] User-folder does not exist')
             raise Exception('Failed to be authorized!')
         else:
-            logger.info('[x] start importing: %r' % src)
-            logger.info('By User: %r' % usr.username)
+            logger.info('[x] start importing: %r', src)
+            logger.info('By User: %r', usr.username)
 
         if fileExtension == ".filepart":
             fileName = fileName.replace(".filepart", "")
@@ -133,23 +133,19 @@ def new_file_detected(pathDir, fileName):
             fileName = new_fileName
             src = pathDir + new_fileName
             import_csv(src, usr.id)
-        elif (fileExtension == ".png") or \
-        (fileExtension == ".jpg") or \
-        fileExtension == ".jpeg" or fileExtension == ".tif" or \
-        fileExtension == ".tiff":
-            dst = pd['storage_base_path'] + pd['image']
+        elif fileExtension in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]:
+            dst = os.path.join(pd['storage_base_path'], pd['image'])
             import_file(pathDir, fileName, dst, usr.id)
-        elif fileExtension == ".avi" or \
-        fileExtension == ".wmv":
-            dst = pd['storage_base_path'] + pd['video']
+        elif fileExtension in [".avi", ".wmv"]:
+            dst = os.path.join(pd['storage_base_path'], pd['video'])
             import_file(pathDir, fileName, dst, usr.id)
         elif fileExtension == ".pdf":
-            dst = pd['storage_base_path'] + pd['file']
+            dst = os.path.join(pd['storage_base_path'], pd['file'])
             import_file(pathDir, fileName, dst, usr.id)
-        elif (fileExtension == ".geotiff"):
-            dst = pd['storage_base_path'] + pd['geotiff']
+        elif fileExtension == ".geotiff":
+            dst = os.path.join(pd['storage_base_path'], pd['geotiff'])
             import_geotiff(pathDir, fileName, dst, usr.id)
-        elif (fileExtension == ".xml"):
+        elif fileExtension == ".xml":
             new_fileName = make_file_name_unique(fileName)
             os.rename(pathDir + fileName, pathDir + new_fileName)
             src = pathDir + new_fileName
