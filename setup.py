@@ -15,6 +15,7 @@ install_requires = [
     'ddsc-logging',
     'django-extensions',
     'django-nose',
+    'gsconfig',
     'pandas',
     'pika',
     'python-daemon',
