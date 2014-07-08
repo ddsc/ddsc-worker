@@ -8,11 +8,11 @@ import shutil
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
+from geoserver.catalog import Catalog
 from pandas import DataFrame
 from pandas.io.parsers import read_csv
 from tslib.readers import PiXmlReader
 
-from ddsc_worker.geoserver.catalog import Catalog
 from ddsc_worker.import_auth import can_change
 from ddsc_worker.import_auth import get_auth
 from ddsc_worker.import_auth import get_remoteid_by_filename
