@@ -106,8 +106,14 @@ def export_pi_xml(src, dst, **options):
 
 
 @celery.task
-def new_file_detected(pathDir, fileName):
+#def new_file_detected(pathDir, fileName):
+def new_file_detected(full_path):
     try:
+        # Watchman sends the full path to the file. Split it so Shaoqing's code
+        # continues to work. TODO: refactor this juggling with dirs and paths.
+        pathDir, fileName = os.path.split(full_path)
+        pathDir = os.path.join(pathDir, '')  # trailing slash
+
         src = os.path.join(pathDir, fileName)
         fileDirName, fileExtension = os.path.splitext(src)
         fileExtension = fileExtension.lower()
