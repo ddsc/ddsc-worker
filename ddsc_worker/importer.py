@@ -301,25 +301,33 @@ def import_lmw(DestinationPath, admFileName, datFileName, kwaFileName):
     nr = len(tsgrouped)
     nr = str(nr)
     logger.debug('There are %r timeseries in file : %r' % (nr, adm_src))
+    with_errors = False
     for name, tsobj_grouped in tsgrouped:
         remoteid = tsobj_grouped['SensorID'][0]
         ts = get_auth(usr, remoteid)  # user object and remote id
+        # New measuring stations may appear at any time without notice.
+        # It seems appropriate to import all known stations and skip
+        # unkown stations instead of raising an exception.
         if ts is False:
-            data_move(adm_src, ERROR_file)
-            data_move(dat_src, ERROR_file)
-            data_move(kwa_src, ERROR_file)
-            logger.error(
-                '[x] File:--%r-- has been rejected because of authorization' %
-                adm_src)
-            raise Exception("[x] %r _FAILED to be imported" % (adm_src))
+            with_errors = True
         else:
             tsobjYes = tsobj_grouped
             write2_cassandra(tsobjYes, ts, dat_src)
 
-    data_move(adm_src, OK_file)
-    data_move(dat_src, OK_file)
-    data_move(kwa_src, OK_file)
-    logger.info('[x] File:--%r-- has been successfully imported' % adm_src)
+    if not with_errors:
+        data_move(adm_src, OK_file)
+        data_move(dat_src, OK_file)
+        data_move(kwa_src, OK_file)
+        logger.info(
+            '[x] File:--%r-- has been successfully imported',
+            adm_src)
+    else:
+        data_move(adm_src, ERROR_file)
+        data_move(dat_src, ERROR_file)
+        data_move(kwa_src, ERROR_file)
+        logger.error(
+            '[x] File:--%r-- has not been successfully imported',
+            adm_src)
 
 
 def read_lmw(admFile, datFile, kwaFile):
